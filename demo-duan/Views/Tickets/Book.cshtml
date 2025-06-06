@@ -1,0 +1,11 @@
+﻿@model demo_duan.Models.Showtime
+
+<h2>Đặt vé cho phim: @Model.Movie.Title</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.Hidden("showtimeId", Model.ShowtimeId)
+    <p>Họ tên khách hàng: <input name="customerName" required /></p>
+    <p>Số ghế: <input name="seats" type="number" required /></p>
+    <button type="submit">Xác nhận đặt vé</button>
+}
