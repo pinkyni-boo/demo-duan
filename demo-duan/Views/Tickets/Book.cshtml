@@ -1,11 +1,326 @@
 ﻿@model demo_duan.Models.Showtime
 
-<h2>Đặt vé cho phim: @Model.Movie.Title</h2>
-
-@using (Html.BeginForm())
-{
-    @Html.Hidden("showtimeId", Model.ShowtimeId)
-    <p>Họ tên khách hàng: <input name="customerName" required /></p>
-    <p>Số ghế: <input name="seats" type="number" required /></p>
-    <button type="submit">Xác nhận đặt vé</button>
+@{
+    ViewData["Title"] = "Book Tickets";
+    var bookedSeats = ViewBag.BookedSeats as List<string> ?? new List<string>();
 }
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-ticket-alt"></i> Book Tickets
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="movie-info mb-4">
+                    <h5>@Model.Movie.Title</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Theater:</strong> @Model.Theater.Name</p>
+                            <p><strong>Address:</strong> @Model.Theater.Address</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Date:</strong> @Model.Date.ToString("dddd, dd MMMM yyyy")</p>
+                            <p><strong>Time:</strong> @Model.Time.ToString(@"hh\:mm")</p>
+                            <p><strong>Price:</strong> $@Model.Movie.Price per ticket</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form asp-action="Book" method="post">
+                    <input type="hidden" name="ShowtimeId" value="@Model.Id" />
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="UserName" class="control-label">Customer Name</label>
+                                <input name="UserName" class="form-control" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="Email" class="control-label">Email</label>
+                                <input name="Email" type="email" class="form-control" required />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="Phone" class="control-label">Phone Number</label>
+                                <input name="Phone" class="form-control" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="Quantity" class="control-label">Number of Tickets</label>
+                                <select name="Quantity" class="form-control" id="quantitySelect" required>
+                                    @for (int i = 1; i <= Math.Min(10, Model.AvailableSeats); i++)
+                                    {
+                                        <option value="@i">@i ticket@(i > 1 ? "s" : "")</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-4">
+                        <label class="control-label">Select Seats</label>
+                        <div class="seat-map">
+                            <div class="screen mb-3">
+                                <div class="screen-label">SCREEN</div>
+                            </div>
+                            
+                            <div class="seats-container">
+                                @{
+                                    var rows = new[] { "A", "B", "C", "D", "E", "F", "G", "H" };
+                                    var seatsPerRow = 12;
+                                }
+                                
+                                @foreach (var row in rows)
+                                {
+                                    <div class="seat-row mb-2">
+                                        <span class="row-label">@row</span>
+                                        @for (int seatNum = 1; seatNum <= seatsPerRow; seatNum++)
+                                        {
+                                            var seatId = $"{row}{seatNum}";
+                                            var isBooked = bookedSeats.Contains(seatId);
+                                            
+                                            <button type="button" 
+                                                    class="seat-btn @(isBooked ? "booked" : "available")" 
+                                                    data-seat="@seatId"
+                                                    @(isBooked ? "disabled" : "")>
+                                                @seatNum
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            
+                            <div class="seat-legend mt-3">
+                                <span class="legend-item">
+                                    <button type="button" class="seat-btn available" disabled></button>
+                                    Available
+                                </span>
+                                <span class="legend-item">
+                                    <button type="button" class="seat-btn selected" disabled></button>
+                                    Selected
+                                </span>
+                                <span class="legend-item">
+                                    <button type="button" class="seat-btn booked" disabled></button>
+                                    Booked
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="Seat" id="selectedSeats" required />
+                        <div class="selected-seats-display mt-2">
+                            <strong>Selected Seats: </strong>
+                            <span id="selectedSeatsText">None</span>
+                        </div>
+                    </div>
+                    
+                    <div class="total-price mb-3">
+                        <h5>Total Price: $<span id="totalPrice">0</span></h5>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-lg" id="bookButton" disabled>
+                            <i class="fas fa-ticket-alt"></i> Book Tickets
+                        </button>
+                        <a asp-controller="Showtimes" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        @if (!string.IsNullOrEmpty(Model.Movie.Img))
+        {
+            <div class="card">
+                <img src="@Model.Movie.Img" class="card-img-top" alt="@Model.Movie.Title">
+                <div class="card-body">
+                    <h6 class="card-title">@Model.Movie.Title</h6>
+                    <p class="card-text">@Model.Movie.Description</p>
+                    <small class="text-muted">Duration: @Model.Movie.Duration minutes</small>
+                </div>
+            </div>
+        }
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Booking Information</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Available Seats:</strong> @Model.AvailableSeats</p>
+                <p><strong>Theater Capacity:</strong> @Model.Theater.Capacity</p>
+                <p><strong>Tickets Sold:</strong> @Model.Tickets.Count</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.screen {
+    background: linear-gradient(to bottom, #333, #666);
+    color: white;
+    text-align: center;
+    padding: 10px;
+    border-radius: 10px 10px 0 0;
+    margin: 0 50px;
+}
+
+.screen-label {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.seats-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.seat-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.row-label {
+    width: 30px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.seat-btn {
+    width: 35px;
+    height: 35px;
+    border: 2px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.seat-btn.available {
+    background: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.seat-btn.available:hover {
+    background: #218838;
+}
+
+.seat-btn.selected {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.seat-btn.booked {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    cursor: not-allowed;
+}
+
+.seat-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+}
+
+.legend-item .seat-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const seatButtons = document.querySelectorAll('.seat-btn.available');
+    const selectedSeatsInput = document.getElementById('selectedSeats');
+    const selectedSeatsText = document.getElementById('selectedSeatsText');
+    const quantitySelect = document.getElementById('quantitySelect');
+    const totalPriceSpan = document.getElementById('totalPrice');
+    const bookButton = document.getElementById('bookButton');
+    const ticketPrice = @Model.Movie.Price;
+    
+    let selectedSeats = [];
+    
+    seatButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const seatId = this.dataset.seat;
+            const maxSeats = parseInt(quantitySelect.value);
+            
+            if (this.classList.contains('selected')) {
+                // Deselect seat
+                this.classList.remove('selected');
+                this.classList.add('available');
+                selectedSeats = selectedSeats.filter(seat => seat !== seatId);
+            } else {
+                // Select seat
+                if (selectedSeats.length < maxSeats) {
+                    this.classList.remove('available');
+                    this.classList.add('selected');
+                    selectedSeats.push(seatId);
+                } else {
+                    alert(`You can only select ${maxSeats} seat(s)`);
+                }
+            }
+            
+            updateDisplay();
+        });
+    });
+    
+    quantitySelect.addEventListener('change', function() {
+        const maxSeats = parseInt(this.value);
+        
+        // If selected seats exceed new quantity, remove excess
+        if (selectedSeats.length > maxSeats) {
+            const excessSeats = selectedSeats.slice(maxSeats);
+            excessSeats.forEach(seatId => {
+                const button = document.querySelector(`[data-seat="${seatId}"]`);
+                button.classList.remove('selected');
+                button.classList.add('available');
+            });
+            selectedSeats = selectedSeats.slice(0, maxSeats);
+        }
+        
+        updateDisplay();
+    });
+    
+    function updateDisplay() {
+        // Update selected seats input
+        selectedSeatsInput.value = selectedSeats.join(',');
+        
+        // Update selected seats text
+        selectedSeatsText.textContent = selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None';
+        
+        // Update total price
+        const totalPrice = selectedSeats.length * ticketPrice;
+        totalPriceSpan.textContent = totalPrice.toFixed(2);
+        
+        // Enable/disable book button
+        const requiredQuantity = parseInt(quantitySelect.value);
+        bookButton.disabled = selectedSeats.length !== requiredQuantity;
+    }
+});
+</script>

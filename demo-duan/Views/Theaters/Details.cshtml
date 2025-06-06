@@ -1,0 +1,135 @@
+@model demo_duan.Models.Theater
+@using demo_duan.Models
+@{
+    ViewData["Title"] = "Theater Details";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-building"></i> Theater Details
+                </h4>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">
+                        <i class="fas fa-hashtag"></i> ID
+                    </dt>
+                    <dd class="col-sm-9">@Model.Id</dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-theater-masks"></i> Name
+                    </dt>
+                    <dd class="col-sm-9">
+                        <strong>@Model.Name</strong>
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-map-marker-alt"></i> Address
+                    </dt>
+                    <dd class="col-sm-9">@Model.Address</dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-chair"></i> Capacity
+                    </dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-info">@Model.Capacity seats</span>
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-phone"></i> Phone
+                    </dt>
+                    <dd class="col-sm-9">
+                        @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+                        {
+                            <a href="tel:@Model.PhoneNumber">@Model.PhoneNumber</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Not provided</span>
+                        }
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-envelope"></i> Email
+                    </dt>
+                    <dd class="col-sm-9">
+                        @if (!string.IsNullOrEmpty(Model.Email))
+                        {
+                            <a href="mailto:@Model.Email">@Model.Email</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Not provided</span>
+                        }
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-film"></i> Showtimes
+                    </dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-success">@Model.Showtimes.Count active showtimes</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit Theater
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Theater
+                    </a>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Showtimes.Any())
+{
+    <div class="mt-4">
+        <h5>Current Showtimes</h5>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Movie</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var showtime in Model.Showtimes.OrderBy(s => s.Date).ThenBy(s => s.Time))
+                    {
+                        <tr>
+                            <td>@showtime.Movie?.Title</td>
+                            <td>@showtime.Date.ToString("dd/MM/yyyy")</td>
+                            <td>@showtime.Time.ToString(@"hh\:mm")</td>
+                            <td>
+                                <a asp-controller="Showtimes" asp-action="Details" asp-route-id="@showtime.Id" 
+                                   class="btn btn-sm btn-outline-info">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

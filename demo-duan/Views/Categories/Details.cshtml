@@ -1,0 +1,101 @@
+@model demo_duan.Models.Category
+
+@{
+    ViewData["Title"] = "Category Details";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Category Details
+                </h4>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">
+                        <i class="fas fa-hashtag"></i> ID
+                    </dt>
+                    <dd class="col-sm-9">@Model.Id</dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-tag"></i> Name
+                    </dt>
+                    <dd class="col-sm-9">
+                        <strong>@Model.Name</strong>
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-align-left"></i> Description
+                    </dt>
+                    <dd class="col-sm-9">
+                        @if (!string.IsNullOrEmpty(Model.Description))
+                        {
+                            @Model.Description
+                        }
+                        else
+                        {
+                            <span class="text-muted">No description provided</span>
+                        }
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-film"></i> Movies Count
+                    </dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-info">@Model.Movies.Count movies</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit Category
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Category
+                    </a>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Movies.Any())
+{
+    <div class="mt-4">
+        <h5>Movies in this Category</h5>
+        <div class="row">
+            @foreach (var movie in Model.Movies)
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        @if (!string.IsNullOrEmpty(movie.Img))
+                        {
+                            <img src="@movie.Img" class="card-img-top" alt="@movie.Title" style="height: 200px; object-fit: cover;">
+                        }
+                        <div class="card-body">
+                            <h6 class="card-title">@movie.Title</h6>
+                            <p class="card-text text-muted">$@movie.Price</p>
+                            <a asp-controller="Movies" asp-action="Details" asp-route-id="@movie.Id" class="btn btn-sm btn-outline-primary">
+                                View Movie
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}

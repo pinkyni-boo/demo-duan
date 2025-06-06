@@ -1,0 +1,381 @@
+@model demo_duan.Models.Showtime
+
+@{
+    ViewData["Title"] = "Select Seats";
+    var bookedSeats = ViewBag.BookedSeats as List<string> ?? new List<string>();
+}
+
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Movies" asp-action="Index">Movies</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Movies" asp-action="Details" asp-route-id="@Model.MovieId">@Model.Movie.Title</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Movies" asp-action="BookTicket" asp-route-id="@Model.MovieId">Book Tickets</a></li>
+            <li class="breadcrumb-item active">Select Seats</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chair"></i> Select Your Seats
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="showtime-info mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>@Model.Movie.Title</h5>
+                                <p class="text-muted mb-0">
+                                    <i class="fas fa-building"></i> @Model.Theater.Name<br>
+                                    <small>@Model.Theater.Address</small>
+                                </p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <p class="mb-0">
+                                    <strong>@Model.Date.ToString("dddd, dd MMMM yyyy")</strong><br>
+                                    <strong>@Model.Time.ToString(@"hh\:mm")</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form asp-controller="Tickets" asp-action="Book" method="post" id="bookingForm">
+                        <input type="hidden" name="ShowtimeId" value="@Model.Id" />
+                        
+                        <div class="seat-selection-area">
+                            <div class="screen mb-4">
+                                <div class="screen-label">SCREEN</div>
+                            </div>
+                            
+                            <div class="seats-container">
+                                @{
+                                    var rows = new[] { "A", "B", "C", "D", "E", "F", "G", "H" };
+                                    var seatsPerRow = 12;
+                                }
+                                
+                                @foreach (var row in rows)
+                                {
+                                    <div class="seat-row">
+                                        <span class="row-label">@row</span>
+                                        <div class="seats">
+                                            @for (int seatNum = 1; seatNum <= seatsPerRow; seatNum++)
+                                            {
+                                                var seatId = $"{row}{seatNum}";
+                                                var isBooked = bookedSeats.Contains(seatId);
+                                                
+                                                <button type="button" 
+                                                        class="seat-btn @(isBooked ? "booked" : "available")" 
+                                                        data-seat="@seatId"
+                                                        @(isBooked ? "disabled" : "")>
+                                                    @seatNum
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            
+                            <div class="seat-legend">
+                                <div class="legend-item">
+                                    <button type="button" class="seat-btn available" disabled></button>
+                                    <span>Available</span>
+                                </div>
+                                <div class="legend-item">
+                                    <button type="button" class="seat-btn selected" disabled></button>
+                                    <span>Selected</span>
+                                </div>
+                                <div class="legend-item">
+                                    <button type="button" class="seat-btn booked" disabled></button>
+                                    <span>Booked</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="customer-details">
+                            <h6>Customer Information</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="UserName" class="form-label">Full Name *</label>
+                                        <input name="UserName" class="form-control" required />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="Email" class="form-label">Email *</label>
+                                        <input name="Email" type="email" class="form-control" required />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="Phone" class="form-label">Phone Number *</label>
+                                        <input name="Phone" class="form-control" required />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Selected Seats</label>
+                                        <input type="hidden" name="Seat" id="selectedSeats" required />
+                                        <input type="hidden" name="Quantity" id="quantity" value="0" />
+                                        <div id="selectedSeatsDisplay" class="form-control-plaintext">
+                                            <span class="text-muted">No seats selected</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card booking-summary">
+                <div class="card-header">
+                    <h5 class="mb-0">Booking Summary</h5>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.Movie.Img))
+                    {
+                        <img src="@Model.Movie.Img" class="img-fluid rounded mb-3" alt="@Model.Movie.Title">
+                    }
+                    
+                    <h6>@Model.Movie.Title</h6>
+                    <p class="text-muted small">
+                        @Model.Theater.Name<br>
+                        @Model.Date.ToString("dd/MM/yyyy") - @Model.Time.ToString(@"hh\:mm")
+                    </p>
+                    
+                    <hr>
+                    
+                    <div class="summary-details">
+                        <div class="d-flex justify-content-between">
+                            <span>Price per ticket:</span>
+                            <span>$@Model.Movie.Price</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Selected seats:</span>
+                            <span id="selectedCount">0</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>Total Amount:</strong>
+                            <strong class="text-success" id="totalAmount">$0.00</strong>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" form="bookingForm" class="btn btn-success w-100 mt-3" id="bookButton" disabled>
+                        <i class="fas fa-credit-card"></i> Book Now
+                    </button>
+                    
+                    <a asp-controller="Movies" asp-action="BookTicket" asp-route-id="@Model.MovieId" 
+                       class="btn btn-outline-secondary w-100 mt-2">
+                        <i class="fas fa-arrow-left"></i> Back to Showtimes
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="fas fa-info-circle text-info"></i> Booking Policy</h6>
+                    <ul class="list-unstyled small">
+                        <li><i class="fas fa-clock text-warning"></i> Arrive 15 minutes before showtime</li>
+                        <li><i class="fas fa-ban text-danger"></i> No refunds after booking</li>
+                        <li><i class="fas fa-ticket-alt text-info"></i> Show this ticket at the theater</li>
+                        <li><i class="fas fa-mobile text-success"></i> Mobile tickets accepted</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.screen {
+    background: linear-gradient(to bottom, #333, #666);
+    color: white;
+    text-align: center;
+    padding: 15px;
+    border-radius: 15px 15px 0 0;
+    margin: 0 50px;
+    position: relative;
+}
+
+.screen::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 10px solid #666;
+}
+
+.screen-label {
+    font-weight: bold;
+    font-size: 18px;
+    letter-spacing: 2px;
+}
+
+.seats-container {
+    max-width: 700px;
+    margin: 30px auto;
+}
+
+.seat-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.row-label {
+    width: 30px;
+    text-align: center;
+    font-weight: bold;
+    color: #666;
+}
+
+.seats {
+    display: flex;
+    gap: 5px;
+}
+
+.seat-btn {
+    width: 35px;
+    height: 35px;
+    border: 2px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.seat-btn.available {
+    background: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.seat-btn.available:hover {
+    background: #218838;
+    transform: scale(1.1);
+}
+
+.seat-btn.selected {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+    transform: scale(1.1);
+}
+
+.seat-btn.booked {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    cursor: not-allowed;
+}
+
+.seat-legend {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.legend-item .seat-btn {
+    width: 25px;
+    height: 25px;
+    font-size: 10px;
+}
+
+.booking-summary img {
+    max-height: 200px;
+    object-fit: cover;
+}
+
+.summary-details {
+    font-size: 14px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const seatButtons = document.querySelectorAll('.seat-btn.available');
+    const selectedSeatsInput = document.getElementById('selectedSeats');
+    const quantityInput = document.getElementById('quantity');
+    const selectedSeatsDisplay = document.getElementById('selectedSeatsDisplay');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const totalAmountSpan = document.getElementById('totalAmount');
+    const bookButton = document.getElementById('bookButton');
+    const ticketPrice = @Model.Movie.Price;
+    
+    let selectedSeats = [];
+    
+    seatButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const seatId = this.dataset.seat;
+            
+            if (this.classList.contains('selected')) {
+                // Deselect seat
+                this.classList.remove('selected');
+                this.classList.add('available');
+                selectedSeats = selectedSeats.filter(seat => seat !== seatId);
+            } else {
+                // Select seat (max 8 seats)
+                if (selectedSeats.length < 8) {
+                    this.classList.remove('available');
+                    this.classList.add('selected');
+                    selectedSeats.push(seatId);
+                } else {
+                    alert('You can select maximum 8 seats at a time');
+                }
+            }
+            
+            updateBookingSummary();
+        });
+    });
+    
+    function updateBookingSummary() {
+        // Update form inputs
+        selectedSeatsInput.value = selectedSeats.join(',');
+        quantityInput.value = selectedSeats.length;
+        
+        // Update display
+        if (selectedSeats.length > 0) {
+            selectedSeatsDisplay.innerHTML = selectedSeats.map(seat => 
+                `<span class="badge bg-primary me-1">${seat}</span>`
+            ).join('');
+        } else {
+            selectedSeatsDisplay.innerHTML = '<span class="text-muted">No seats selected</span>';
+        }
+        
+        // Update summary
+        selectedCountSpan.textContent = selectedSeats.length;
+        const totalAmount = selectedSeats.length * ticketPrice;
+        totalAmountSpan.textContent = `$${totalAmount.toFixed(2)}`;
+        
+        // Enable/disable book button
+        bookButton.disabled = selectedSeats.length === 0;
+    }
+});
+</script>

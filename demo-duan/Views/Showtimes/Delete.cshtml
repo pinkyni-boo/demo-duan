@@ -1,0 +1,87 @@
+@model demo_duan.Models.Showtime
+
+@{
+    ViewData["Title"] = "Delete Showtime";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> Delete Showtime
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <strong>Warning!</strong> Are you sure you want to delete this showtime?
+                </div>
+                
+                <h5>Showtime Details:</h5>
+                <dl class="row">
+                    <dt class="col-sm-3">Movie</dt>
+                    <dd class="col-sm-9"><strong>@Model.Movie.Title</strong></dd>
+                    
+                    <dt class="col-sm-3">Theater</dt>
+                    <dd class="col-sm-9">@Model.Theater.Name</dd>
+                    
+                    <dt class="col-sm-3">Date & Time</dt>
+                    <dd class="col-sm-9">@Model.Date.ToString("dd/MM/yyyy") at @Model.Time.ToString(@"hh\:mm")</dd>
+                    
+                    <dt class="col-sm-3">Available Seats</dt>
+                    <dd class="col-sm-9">@Model.AvailableSeats seats</dd>
+                    
+                    <dt class="col-sm-3">Tickets Booked</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-info">@Model.Tickets.Count tickets</span>
+                    </dd>
+                </dl>
+                
+                @if (Model.Tickets.Any())
+                {
+                    <div class="alert alert-danger">
+                        <strong>Cannot Delete!</strong> This showtime has @Model.Tickets.Count booked ticket(s). 
+                        Deleting this showtime will affect customer bookings.
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Booked tickets:</h6>
+                        <ul>
+                            @foreach (var ticket in Model.Tickets.Take(5))
+                            {
+                                <li>Ticket #@ticket.Id - @ticket.UserName (@ticket.Seat)</li>
+                            }
+                            @if (Model.Tickets.Count > 5)
+                            {
+                                <li><em>... and @(Model.Tickets.Count - 5) more</em></li>
+                            }
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <form asp-action="Delete" class="mt-3">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Yes, Delete Showtime
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                }
+                
+                @if (Model.Tickets.Any())
+                {
+                    <div class="mt-3">
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

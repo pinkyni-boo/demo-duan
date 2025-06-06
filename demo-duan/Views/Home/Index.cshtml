@@ -1,8 +1,39 @@
-﻿@{
+﻿@model IEnumerable<demo_duan.Models.Movie>
+@{
     ViewData["Title"] = "Home Page";
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">Welcome to Movie Booking</h1>
+    <p>Book your favorite movies now!</p>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Now Showing</h2>
+        <div class="row">
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var movie in Model.Take(6))
+                {
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <img src="@movie.Img" class="card-img-top" alt="@movie.Title" style="height: 300px; object-fit: cover;">
+                            <div class="card-body">
+                                <h5 class="card-title">@movie.Title</h5>
+                                <p class="card-text">@movie.Category</p>
+                                <p class="card-text">Duration: @movie.Duration minutes</p>
+                                <p class="card-text">Price: $@movie.Price</p>
+                                <a asp-controller="Movies" asp-action="Details" asp-route-id="@movie.Id" class="btn btn-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>No movies available at the moment.</p>
+            }
+        </div>
+    </div>
 </div>

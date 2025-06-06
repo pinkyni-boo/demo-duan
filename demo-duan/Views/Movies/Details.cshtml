@@ -1,0 +1,86 @@
+﻿@model demo_duan.Models.Movie
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>@Model.Title</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        @if (!string.IsNullOrEmpty(Model.Img))
+        {
+            <img src="@Model.Img" class="img-fluid" alt="@Model.Title">
+        }
+        else
+        {
+            <div class="bg-light p-4 text-center">
+                <i class="fas fa-image fa-3x text-muted"></i>
+                <p class="text-muted">No image available</p>
+            </div>
+        }
+    </div>
+    <div class="col-md-8">
+        <dl class="row">
+            <dt class="col-sm-3">Category</dt>
+            <dd class="col-sm-9">@Model.Category?.Name</dd>
+            
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    @Model.Description
+                }
+                else
+                {
+                    <span class="text-muted">No description available</span>
+                }
+            </dd>
+            
+            <dt class="col-sm-3">Duration</dt>
+            <dd class="col-sm-9">@Model.Duration minutes</dd>
+            
+            <dt class="col-sm-3">Price</dt>
+            <dd class="col-sm-9">$@Model.Price</dd>
+            
+            <dt class="col-sm-3">Release Date</dt>
+            <dd class="col-sm-9">@Model.ReleaseDate.ToString("dd/MM/yyyy")</dd>
+        </dl>
+    </div>
+</div>
+
+<hr>
+
+<h3>Showtimes</h3>
+@if (Model.Showtimes != null && Model.Showtimes.Any())
+{
+    <div class="row">
+        @foreach (var showtime in Model.Showtimes)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@showtime.Theater?.Name</h5>
+                        <p class="card-text">
+                            <strong>Date:</strong> @showtime.Date.ToString("dd/MM/yyyy")<br>
+                            <strong>Time:</strong> @showtime.Time.ToString(@"hh\:mm")<br>
+                            <strong>Theater:</strong> @showtime.Theater?.Address
+                        </p>
+                        <a asp-controller="Tickets" asp-action="Book" asp-route-showtimeId="@showtime.Id" class="btn btn-success">Book Now</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <p>No showtimes available for this movie.</p>
+    </div>
+}
+
+<div class="mt-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>

@@ -1,0 +1,169 @@
+@model demo_duan.Models.Showtime
+
+@{
+    ViewData["Title"] = "Showtime Details";
+    var isPast = Model.Date.Date < DateTime.Today || (Model.Date.Date == DateTime.Today && Model.Time < DateTime.Now.TimeOfDay);
+    var ticketsSold = Model.Tickets.Count;
+    var totalCapacity = Model.AvailableSeats + ticketsSold;
+    var occupancyRate = totalCapacity > 0 ? (double)ticketsSold / totalCapacity * 100 : 0;
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-calendar-alt"></i> Showtime Details
+                </h4>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">
+                        <i class="fas fa-hashtag"></i> ID
+                    </dt>
+                    <dd class="col-sm-9">@Model.Id</dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-film"></i> Movie
+                    </dt>
+                    <dd class="col-sm-9">
+                        <strong>@Model.Movie.Title</strong>
+                        <br>
+                        <small class="text-muted">Duration: @Model.Movie.Duration minutes</small>
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-building"></i> Theater
+                    </dt>
+                    <dd class="col-sm-9">
+                        <strong>@Model.Theater.Name</strong>
+                        <br>
+                        <small class="text-muted">@Model.Theater.Address</small>
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-calendar"></i> Date
+                    </dt>
+                    <dd class="col-sm-9">@Model.Date.ToString("dddd, dd MMMM yyyy")</dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-clock"></i> Time
+                    </dt>
+                    <dd class="col-sm-9">@Model.Time.ToString(@"hh\:mm")</dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-chair"></i> Available Seats
+                    </dt>
+                    <dd class="col-sm-9">
+                        <span class="badge @(Model.AvailableSeats > 10 ? "bg-success" : Model.AvailableSeats > 0 ? "bg-warning" : "bg-danger")">
+                            @Model.AvailableSeats / @totalCapacity seats
+                        </span>
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-ticket-alt"></i> Tickets Sold
+                    </dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-info">@ticketsSold tickets</span>
+                        <small class="text-muted">(@occupancyRate.ToString("F1")% occupancy)</small>
+                    </dd>
+                    
+                    <dt class="col-sm-3">
+                        <i class="fas fa-info-circle"></i> Status
+                    </dt>
+                    <dd class="col-sm-9">
+                        @if (isPast)
+                        {
+                            <span class="badge bg-secondary">Finished</span>
+                        }
+                        else if (Model.AvailableSeats == 0)
+                        {
+                            <span class="badge bg-danger">Sold Out</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Available</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    @if (!isPast)
+                    {
+                        <a asp-controller="Tickets" asp-action="Book" asp-route-showtimeId="@Model.Id" class="btn btn-success">
+                            <i class="fas fa-ticket-alt"></i> Book Tickets
+                        </a>
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Edit Showtime
+                        </a>
+                    }
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Showtime
+                    </a>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.Movie.Img != null)
+        {
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Movie Poster</h6>
+                </div>
+                <div class="card-body text-center">
+                    <img src="@Model.Movie.Img" alt="@Model.Movie.Title" class="img-fluid rounded">
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.Tickets.Any())
+{
+    <div class="mt-4">
+        <h5>Booked Tickets</h5>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Ticket ID</th>
+                        <th>Customer</th>
+                        <th>Seat</th>
+                        <th>Price</th>
+                        <th>Booking Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ticket in Model.Tickets.OrderBy(t => t.Seat))
+                    {
+                        <tr>
+                            <td>@ticket.Id</td>
+                            <td>@ticket.UserName</td>
+                            <td><span class="badge bg-primary">@ticket.Seat</span></td>
+                            <td>$@ticket.Price</td>
+                            <td>@ticket.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <span class="badge bg-@(ticket.Status == "Confirmed" ? "success" : ticket.Status == "Cancelled" ? "danger" : "warning")">
+                                    @ticket.Status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
