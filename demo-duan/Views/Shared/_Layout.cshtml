@@ -1,44 +1,61 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Movie Booking</title>
+    <title>@ViewData["Title"] - Cinema Booking</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Movie Booking</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <a class="navbar-brand fw-bold" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-film me-2"></i>Cinema Booking
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home"></i> Home
+                            </a>
                         </li>
+                        
+                        <!-- Movies Dropdown -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="moviesDropdown" role="button" data-bs-toggle="dropdown">
-                                Movies
+                            <a class="nav-link dropdown-toggle" href="#" id="moviesDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-film"></i> Movies
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-controller="Movies" asp-action="Index">All Movies</a></li>
-                                <li><a class="dropdown-item" asp-controller="Movies" asp-action="NowShowing">Now Showing</a></li>
-                                <li><a class="dropdown-item" asp-controller="Movies" asp-action="ComingSoon">Coming Soon</a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="Movies">
+                                    <i class="fas fa-list me-2"></i>All Movies
+                                </a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="NowShowing">
+                                    <i class="fas fa-play me-2"></i>Now Showing
+                                </a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="ComingSoon">
+                                    <i class="fas fa-calendar me-2"></i>Coming Soon
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-controller="Tickets" asp-action="Index">
+                                    <i class="fas fa-ticket-alt me-2"></i>My Tickets
+                                </a></li>
                             </ul>
                         </li>
+
+                        <!-- Admin Panel -->
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Categories" asp-action="Index">Categories</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Theaters" asp-action="Index">Theaters</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Tickets" asp-action="Index">My Tickets</a>
+                            <a class="nav-link" asp-area="Admin" asp-controller="Movies" asp-action="Index">
+                                <i class="fas fa-cog"></i> Admin Panel
+                            </a>
                         </li>
                     </ul>
                     <partial name="_LoginPartial" />
@@ -46,17 +63,29 @@
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+    
+    <main role="main" class="flex-grow-1">
+        @RenderBody()
+    </main>
 
-    <footer class="border-top footer text-muted">
+    <footer class="bg-dark text-light py-4 mt-5">
         <div class="container">
-            &copy; 2025 - Movie Booking
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-film me-2"></i>Cinema Booking</h5>
+                    <p class="mb-0">Your ultimate cinema experience</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">&copy; 2025 - Cinema Booking System</p>
+                    <div>
+                        <a asp-controller="Home" asp-action="Privacy" class="text-light me-3">Privacy</a>
+                        <small>All rights reserved</small>
+                    </div>
+                </div>
+            </div>
         </div>
     </footer>
+    
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

@@ -1,0 +1,257 @@
+﻿@model IEnumerable<demo_duan.Models.Movie>
+
+@{
+    ViewData["Title"] = "Manage Movies";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-film me-2"></i>Movies Management</h1>
+    <a asp-action="Create" class="btn btn-success">
+        <i class="fas fa-plus"></i> Add New Movie
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Poster</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Duration</th>
+                        <th>Release Date</th>
+                        <th>Price</th>
+                        <th>Showtimes</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            var showtimes = item.Showtimes ?? new List<demo_duan.Models.Showtime>();
+                            var hasShowtimes = showtimes.Any();
+                            var isActive = hasShowtimes && showtimes.Any(s => s.Date >= DateTime.Today);
+                            
+                            <tr>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(item.Img))
+                                    {
+                                        <img src="@item.Img" alt="@item.Title" style="width: 50px; height: 75px;" class="img-thumbnail">
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 75px;">
+                                            <i class="fas fa-film text-muted"></i>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    <strong>@item.Title</strong>
+                                    <br>
+                                    <small class="text-muted">@(item.Description?.Length > 50 ? item.Description.Substring(0, 50) + "..." : item.Description)</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">@(item.Category?.Name ?? "No Category")</span>
+                                </td>
+                                <td>@item.Duration min</td>
+                                <td>@item.ReleaseDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <strong class="text-success">$@item.Price</strong>
+                                </td>
+                                <td>
+                                    @if (hasShowtimes)
+                                    {
+                                        <span class="badge bg-primary">@showtimes.Count() shows</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">No shows</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (isActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else if (item.ReleaseDate > DateTime.Today)
+                                    {
+                                        <span class="badge bg-warning">Coming Soon</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a asp-action="Details" asp-route-id="@item.Id" 
+                                           class="btn btn-outline-info btn-sm" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.Id" 
+                                           class="btn btn-outline-warning btn-sm" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.Id" 
+                                           class="btn btn-outline-danger btn-sm" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-film fa-3x mb-3"></i>
+                                    <p>No movies found.</p>
+                                    <a asp-action="Create" class="btn btn-primary">Create the first movie</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">@(Model?.Count() ?? 0)</h5>
+                    <p class="card-text">Total Movies</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">@(Model?.Count(m => (m.Showtimes ?? new List<demo_duan.Models.Showtime>()).Any(s => s.Date >= DateTime.Today)) ?? 0)</h5>
+                    <p class="card-text">Now Showing</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">@(Model?.Count(m => m.ReleaseDate > DateTime.Today) ?? 0)</h5>
+                    <p class="card-text">Coming Soon</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">$@(Model?.Sum(m => m.Price * ((m.Tickets?.Count()) ?? 0)) ?? 0)</h5>
+                    <p class="card-text">Total Revenue</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hero-section {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/images/cinema-bg.jpg') center/cover;
+}
+
+.movie-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.movie-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.movie-poster {
+    height: 300px;
+    object-fit: cover;
+}
+
+.movie-poster-placeholder {
+    height: 300px;
+    background-color: #f8f9fa;
+}
+
+.movie-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.movie-card:hover .movie-overlay {
+    opacity: 1;
+}
+
+.movie-overlay-content {
+    text-align: center;
+}
+
+.movie-overlay-content .btn {
+    margin: 0 5px;
+}
+
+/* Responsive design */
+@ViewBag.Media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-buttons .btn {
+        padding: 10px 20px;
+        margin-bottom: 10px;
+    }
+    
+    .movie-card {
+        margin-bottom: 20px;
+    }
+}
+
+@ViewBag.Media (max-width: 576px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .col-lg-3, .col-md-4, .col-sm-6 {
+        margin-bottom: 15px;
+    }
+}
+</style>

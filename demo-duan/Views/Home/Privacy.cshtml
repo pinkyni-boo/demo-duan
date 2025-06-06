@@ -1,6 +1,47 @@
 ﻿@{
     ViewData["Title"] = "Privacy Policy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Privacy Policy
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Your privacy is important to us. This privacy statement explains the personal data we process and how we process it.</p>
+                    
+                    <h4>Information We Collect</h4>
+                    <ul>
+                        <li>Personal information you provide when booking tickets</li>
+                        <li>Payment information for ticket purchases</li>
+                        <li>Usage data to improve our services</li>
+                        <li>Cookies and similar technologies</li>
+                    </ul>
+                    
+                    <h4>How We Use Your Information</h4>
+                    <ul>
+                        <li>To process your ticket bookings</li>
+                        <li>To send you booking confirmations and updates</li>
+                        <li>To improve our website and services</li>
+                        <li>To comply with legal obligations</li>
+                    </ul>
+                    
+                    <h4>Data Protection</h4>
+                    <p>We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.</p>
+                    
+                    <h4>Contact Us</h4>
+                    <p>If you have any questions about this Privacy Policy, please contact us at privacy@cinemabooking.com</p>
+                    
+                    <div class="text-muted">
+                        <small>Last updated: @DateTime.Now.ToString("MMMM dd, yyyy")</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
