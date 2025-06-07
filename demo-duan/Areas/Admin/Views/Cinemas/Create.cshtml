@@ -1,0 +1,143 @@
+@model demo_duan.Models.Cinema
+@{
+    ViewData["Title"] = "Thêm Phòng chiếu mới";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-plus-circle me-2 text-primary"></i>Thêm Phòng chiếu mới</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
+                <li class="breadcrumb-item"><a href="/Admin/Cinemas">Cinemas</a></li>
+                <li class="breadcrumb-item active">Create</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card admin-card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Thông tin phòng chiếu
+                </h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    
+                    <div class="row">
+                        <!-- Theater Selection -->
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="TheaterId" class="form-label required">
+                                <i class="fas fa-building me-1 text-primary"></i>Rạp chiếu phim
+                            </label>
+                            <select asp-for="TheaterId" asp-items="ViewBag.TheaterId" class="form-select">
+                                <option value="">-- Chọn rạp chiếu phim --</option>
+                            </select>
+                            <span asp-validation-for="TheaterId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Cinema Name -->
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Name" class="form-label required">
+                                <i class="fas fa-video me-1 text-info"></i>Tên phòng chiếu
+                            </label>
+                            <input asp-for="Name" class="form-control" placeholder="VD: Phòng 1, Cinema A..." />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Seats -->
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Seats" class="form-label required">
+                                <i class="fas fa-chair me-1 text-success"></i>Số ghế
+                            </label>
+                            <input asp-for="Seats" class="form-control" type="number" min="1" max="500" placeholder="100" />
+                            <span asp-validation-for="Seats" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Số ghế từ 1 đến 500
+                            </div>
+                        </div>
+
+                        <!-- Type -->
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Type" class="form-label">
+                                <i class="fas fa-tag me-1 text-warning"></i>Loại phòng chiếu
+                            </label>
+                            <select asp-for="Type" class="form-select">
+                                <option value="">-- Chọn loại phòng --</option>
+                                <option value="2D">2D Standard</option>
+                                <option value="3D">3D</option>
+                                <option value="IMAX">IMAX</option>
+                                <option value="4DX">4DX</option>
+                                <option value="VIP">VIP</option>
+                                <option value="Gold Class">Gold Class</option>
+                                <option value="Standard">Standard</option>
+                            </select>
+                            <span asp-validation-for="Type" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <label asp-for="Description" class="form-label">
+                            <i class="fas fa-comment me-1 text-muted"></i>Mô tả
+                        </label>
+                        <textarea asp-for="Description" class="form-control" rows="3" 
+                                  placeholder="Mô tả về phòng chiếu, thiết bị, đặc điểm..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                            <label asp-for="IsActive" class="form-check-label">
+                                <i class="fas fa-toggle-on me-1 text-success"></i>Phòng chiếu hoạt động
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Chỉ những phòng đang hoạt động mới có thể tạo suất chiếu
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="submit" class="btn btn-admin-success">
+                            <i class="fas fa-save me-1"></i>Lưu phòng chiếu
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Hủy
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+<style>
+    .required::after {
+        content: " *";
+        color: red;
+    }
+    
+    .form-select:focus,
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+</style>

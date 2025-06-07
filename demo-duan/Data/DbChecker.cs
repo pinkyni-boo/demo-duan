@@ -6,99 +6,175 @@ namespace demo_duan.Data
 {
     public static class DbChecker
     {
-        public static async Task CheckAndSeedAsync(ApplicationDbContext context, ILogger logger)
+        public static async Task EnsureDatabaseSeeded(ApplicationDbContext context)
         {
-            try
+            await context.Database.EnsureCreatedAsync();
+
+            // Seed Categories
+            if (!await context.Categories.AnyAsync())
             {
-                // Ensure database is created
-                await context.Database.EnsureCreatedAsync();
-
-                // Seed Categories
-                if (!await context.Categories.AnyAsync())
+                var categories = new List<Category>
                 {
-                    var categories = new[]
-                    {
-                        new Category { Name = "Hành động", Description = "Phim hành động" },
-                        new Category { Name = "Hài kịch", Description = "Phim hài" },
-                        new Category { Name = "Kinh dị", Description = "Phim kinh dị" },
-                        new Category { Name = "Tình cảm", Description = "Phim tình cảm" },
-                        new Category { Name = "Khoa học viễn tưởng", Description = "Phim sci-fi" },
-                        new Category { Name = "Phiêu lưu", Description = "Phim phiêu lưu" }
-                    };
+                    new Category { Name = "Hành động", Description = "Phim hành động" },
+                    new Category { Name = "Kinh dị", Description = "Phim kinh dị" },
+                    new Category { Name = "Hài hước", Description = "Phim hài hước" },
+                    new Category { Name = "Lãng mạn", Description = "Phim lãng mạn" },
+                    new Category { Name = "Khoa học viễn tưởng", Description = "Phim khoa học viễn tưởng" }
+                };
 
-                    context.Categories.AddRange(categories);
-                    await context.SaveChangesAsync();
-                    logger.LogInformation("Categories seeded successfully");
-                }
-
-                // Seed Theaters
-                if (!await context.Theaters.AnyAsync())
-                {
-                    var theaters = new[]
-                    {
-                        new Theater 
-                        { 
-                            Name = "Rạp Galaxy 1", 
-                            Capacity = 120, 
-                            Location = "Tầng 1",
-                            Address = "123 Nguyễn Văn Cừ, Quận 1, TP.HCM",
-                            PhoneNumber = "028-3825-1234",
-                            Email = "galaxy1@cinema.com"
-                        },
-                        new Theater 
-                        { 
-                            Name = "Rạp Galaxy 2", 
-                            Capacity = 150, 
-                            Location = "Tầng 2",
-                            Address = "456 Lê Lợi, Quận 1, TP.HCM",
-                            PhoneNumber = "028-3825-5678",
-                            Email = "galaxy2@cinema.com"
-                        },
-                        new Theater 
-                        { 
-                            Name = "Rạp Galaxy 3", 
-                            Capacity = 100, 
-                            Location = "Tầng 3",
-                            Address = "789 Trần Hưng Đạo, Quận 5, TP.HCM",
-                            PhoneNumber = "028-3825-9012",
-                            Email = "galaxy3@cinema.com"
-                        },
-                        new Theater 
-                        { 
-                            Name = "Rạp IMAX Premium", 
-                            Capacity = 200, 
-                            Location = "Tầng 4",
-                            Address = "321 Hai Bà Trưng, Quận 3, TP.HCM",
-                            PhoneNumber = "028-3825-3456",
-                            Email = "imax@cinema.com"
-                        }
-                    };
-
-                    context.Theaters.AddRange(theaters);
-                    await context.SaveChangesAsync();
-                    logger.LogInformation("Theaters seeded successfully");
-                }
-
-                // Seed Payment Methods
-                if (!await context.PaymentMethods.AnyAsync())
-                {
-                    var paymentMethods = new[]
-                    {
-                        new PaymentMethod { Name = "Tiền mặt", Description = "Thanh toán bằng tiền mặt tại quầy" },
-                        new PaymentMethod { Name = "Thẻ tín dụng", Description = "Thanh toán bằng thẻ Visa/Mastercard" },
-                        new PaymentMethod { Name = "Ví điện tử", Description = "Thanh toán qua MoMo, ZaloPay" },
-                        new PaymentMethod { Name = "Chuyển khoản", Description = "Chuyển khoản ngân hàng" }
-                    };
-
-                    context.PaymentMethods.AddRange(paymentMethods);
-                    await context.SaveChangesAsync();
-                    logger.LogInformation("Payment methods seeded successfully");
-                }
+                await context.Categories.AddRangeAsync(categories);
+                await context.SaveChangesAsync();
             }
-            catch (Exception ex)
+
+            // Seed Movies
+            if (!await context.Movies.AnyAsync())
             {
-                logger.LogError(ex, "Error occurred while seeding database");
-                throw;
+                var actionCategory = await context.Categories.FirstAsync(c => c.Name == "Hành động");
+                var movies = new List<Movie>
+                {
+                    new Movie
+                    {
+                        Title = "Fast & Furious X",
+                        Description = "Phim hành động tốc độ",
+                        Duration = 120,
+                        Price = 120000,
+                        ReleaseDate = DateTime.Today.AddDays(-30),
+                        CategoryId = actionCategory.Id,
+                        Img = "/images/movies/fast-furious.jpg",
+                        IsActive = true,
+                        Rating = 8.5m,
+                        Language = "Tiếng Anh - Phụ đề Việt",
+                        Director = "Louis Leterrier",
+                        Cast = "Vin Diesel, Jason Momoa, Michelle Rodriguez"
+                    }
+                };
+
+                foreach (var movie in movies)
+                {
+                    movie.UpdateStatusBasedOnReleaseDate();
+                }
+
+                await context.Movies.AddRangeAsync(movies);
+                await context.SaveChangesAsync();
+            }
+
+            // Seed Theaters
+            if (!await context.Theaters.AnyAsync())
+            {
+                var theaters = new List<Theater>
+                {
+                    new Theater
+                    {
+                        Name = "CGV Vincom",
+                        Address = "Vincom Center, Quận 1, TP.HCM",
+                        Phone = "0901234567",
+                        Email = "cgv.vincom@cinema.com",
+                        City = "TP.HCM",
+                        IsActive = true
+                    },
+                    new Theater
+                    {
+                        Name = "Galaxy Nguyễn Du",
+                        Address = "Nguyễn Du, Quận 1, TP.HCM", 
+                        Phone = "0901234568",
+                        Email = "galaxy.nguyendu@cinema.com",
+                        City = "TP.HCM",
+                        IsActive = true
+                    },
+                    new Theater
+                    {
+                        Name = "Lotte Cinema",
+                        Address = "Lotte Center, Quận 1, TP.HCM",
+                        Phone = "0901234569",
+                        Email = "lotte.center@cinema.com",
+                        City = "TP.HCM",
+                        IsActive = true
+                    },
+                    new Theater
+                    {
+                        Name = "BHD Star Bitexco",
+                        Address = "Bitexco Financial Tower, Quận 1, TP.HCM",
+                        Phone = "0901234570",
+                        Email = "bhd.bitexco@cinema.com",
+                        City = "TP.HCM",
+                        IsActive = true
+                    }
+                };
+
+                await context.Theaters.AddRangeAsync(theaters);
+                await context.SaveChangesAsync();
+            }
+
+            // Seed Payment Methods
+            if (!await context.PaymentMethods.AnyAsync())
+            {
+                var paymentMethods = new List<PaymentMethod>
+                {
+                    new PaymentMethod
+                    {
+                        Name = "Tiền mặt",
+                        Description = "Thanh toán bằng tiền mặt tại quầy",
+                        Icon = "/images/payment/cash.png",
+                        IsActive = true,
+                        TransactionFee = 0,
+                        DisplayOrder = 1
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "VNPay",
+                        Description = "Thanh toán qua ví điện tử VNPay",
+                        Icon = "/images/payment/vnpay.png",
+                        IsActive = true,
+                        TransactionFee = 1.5m,
+                        DisplayOrder = 2
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "MoMo",
+                        Description = "Thanh toán qua ví MoMo",
+                        Icon = "/images/payment/momo.png",
+                        IsActive = true,
+                        TransactionFee = 2.0m,
+                        DisplayOrder = 3
+                    },
+                    new PaymentMethod
+                    {
+                        Name = "ZaloPay",
+                        Description = "Thanh toán qua ZaloPay",
+                        Icon = "/images/payment/zalopay.png",
+                        IsActive = true,
+                        TransactionFee = 1.8m,
+                        DisplayOrder = 4
+                    }
+                };
+
+                await context.PaymentMethods.AddRangeAsync(paymentMethods);
+                await context.SaveChangesAsync();
+            }
+
+            // Seed sample Payments (nếu cần)
+            if (!await context.Payments.AnyAsync())
+            {
+                var firstTicket = await context.Tickets.FirstOrDefaultAsync();
+                var cashMethod = await context.PaymentMethods.FirstOrDefaultAsync(pm => pm.Name == "Tiền mặt");
+                
+                if (firstTicket != null && cashMethod != null)
+                {
+                    var samplePayment = new Payment
+                    {
+                        TicketId = firstTicket.Id,
+                        PaymentMethodId = cashMethod.Id,
+                        UserId = firstTicket.UserId,
+                        Amount = firstTicket.TotalPrice,
+                        Status = PaymentStatus.Completed,
+                        PaymentDate = DateTime.Now,
+                        TransactionId = "CASH_" + DateTime.Now.Ticks,
+                        ProcessedDate = DateTime.Now
+                    };
+
+                    await context.Payments.AddAsync(samplePayment);
+                    await context.SaveChangesAsync();
+                }
             }
         }
     }

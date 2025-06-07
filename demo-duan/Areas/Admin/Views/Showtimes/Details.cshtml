@@ -153,7 +153,7 @@
                             <td>@ticket.Id</td>
                             <td>@ticket.UserId</td>
                             <td><span class="badge bg-primary">@ticket.SeatNumber</span></td>
-                            <td>$@ticket.Price</td>
+                            <td>@ticket.TotalPrice.ToString("C", new System.Globalization.CultureInfo("vi-VN"))</td>
                             <td>@ticket.BookingDate.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>
                                 <span class="badge bg-@(ticket.Status == "Confirmed" ? "success" : ticket.Status == "Cancelled" ? "danger" : "warning")">

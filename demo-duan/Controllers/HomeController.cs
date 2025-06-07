@@ -23,31 +23,32 @@ namespace demo_duan.Controllers
         {
             try
             {
-                // Load data từ database hiện tại
-                var featuredMovies = await _context.Movies
+                var movies = await _context.Movies
                     .Include(m => m.Category)
-                    .Include(m => m.Showtimes.Where(s => s.Date >= DateTime.Today))
-                    .ThenInclude(s => s.Theater)
-                    .Where(m => m.Showtimes.Any(s => s.Date >= DateTime.Today))
+                    .Where(m => m.IsActive && m.Status == MovieStatus.NowShowing)
                     .OrderByDescending(m => m.ReleaseDate)
-                    .Take(8)
+                    .Take(12)
                     .ToListAsync();
 
-                var categories = await _context.Categories.ToListAsync();
-                
+                var categories = await _context.Categories
+                    .Where(c => c.Movies.Any(m => m.IsActive))
+                    .ToListAsync();
+
+                // Sửa dòng 84 - kiểm tra null an toàn
+                var featuredMovies = movies
+                    .Where(m => m.Category != null && m.Category.Name != null && m.Category.Name.Equals("Hành động", StringComparison.OrdinalIgnoreCase))
+                    .Take(6)
+                    .ToList();
+
                 ViewBag.Categories = categories;
                 ViewBag.FeaturedMovies = featuredMovies;
 
-                _logger.LogInformation($"Loaded {featuredMovies.Count} movies and {categories.Count} categories");
-                
-                return View();
+                return View(movies);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading home page data");
-                ViewBag.Categories = new List<Category>();
-                ViewBag.FeaturedMovies = new List<Movie>();
-                return View();
+                TempData["ErrorMessage"] = "Lỗi khi tải dữ liệu trang chủ: " + ex.Message;
+                return View(new List<Movie>());
             }
         }
 

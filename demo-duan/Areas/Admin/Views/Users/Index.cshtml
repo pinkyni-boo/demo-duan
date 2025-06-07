@@ -1,0 +1,271 @@
+@model IEnumerable<Microsoft.AspNetCore.Identity.IdentityUser>
+@{
+    ViewData["Title"] = "Quản lý Người dùng";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var userRoles = ViewBag.UserRoles as Dictionary<string, IList<string>>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-users me-2 text-primary"></i>Quản lý Người dùng</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
+                <li class="breadcrumb-item active">Users</li>
+            </ol>
+        </nav>
+    </div>
+    <a href="/Identity/Account/Register" class="btn btn-admin-success">
+        <i class="fas fa-user-plus me-1"></i>Thêm người dùng
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Tổng người dùng</p>
+                        <h3 class="mb-0">@Model.Count()</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card text-white" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Admin</p>
+                        <h3 class="mb-0">@(userRoles?.Count(ur => ur.Value.Contains("Admin")) ?? 0)</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-user-shield fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card text-white" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">User thường</p>
+                        <h3 class="mb-0">@(userRoles?.Count(ur => ur.Value.Contains("User") && !ur.Value.Contains("Admin")) ?? 0)</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-user fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card admin-card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-list me-2"></i>Danh sách người dùng</h6>
+            <div class="d-flex gap-2">
+                <input type="text" class="form-control form-control-sm" placeholder="Tìm kiếm..." style="width: 200px;" id="userSearch">
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-filter me-1"></i>Lọc
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="filterUsers('all')">Tất cả</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterUsers('admin')">Admin</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterUsers('user')">User</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover admin-table mb-0" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Thông tin</th>
+                            <th>Email</th>
+                            <th>Vai trò</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            var roles = userRoles?[user.Id] ?? new List<string>();
+                            <tr data-roles="@string.Join(",", roles).ToLower()">
+                                <td>
+                                    <div class="user-avatar">
+                                        <div class="avatar-circle">
+                                            @user.UserName?.Substring(0, 1).ToUpper()
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <h6 class="mb-1">@user.UserName</h6>
+                                        <small class="text-muted">ID: @user.Id.Substring(0, 8)...</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <span>@user.Email</span>
+                                        @if (user.EmailConfirmed)
+                                        {
+                                            <i class="fas fa-check-circle text-success ms-1" title="Email đã xác nhận"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-exclamation-circle text-warning ms-1" title="Email chưa xác nhận"></i>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (roles.Any())
+                                    {
+                                        @foreach (var role in roles)
+                                        {
+                                            <span class="badge @(role == "Admin" ? "bg-danger" : "bg-primary") me-1">
+                                                <i class="fas @(role == "Admin" ? "fa-user-shield" : "fa-user") me-1"></i>@role
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Chưa có vai trò</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.Now)
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-lock me-1"></i>Bị khóa
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Hoạt động
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a asp-action="Details" asp-route-id="@user.Id" class="btn btn-sm btn-outline-info" title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="ManageRoles" asp-route-id="@user.Id" class="btn btn-sm btn-outline-warning" title="Quản lý vai trò">
+                                            <i class="fas fa-user-cog"></i>
+                                        </a>
+                                        @if (!roles.Contains("Admin") || roles.Count > 1)
+                                        {
+                                            <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Chưa có người dùng nào</h5>
+                <p class="text-muted">Hãy tạo tài khoản đầu tiên cho hệ thống</p>
+                <a href="/Identity/Account/Register" class="btn btn-admin-success">
+                    <i class="fas fa-user-plus me-1"></i>Tạo tài khoản
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('userSearch').addEventListener('input', function() {
+            const searchValue = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#usersTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchValue) ? '' : 'none';
+            });
+        });
+
+        // Filter functionality
+        function filterUsers(filter) {
+            const rows = document.querySelectorAll('#usersTable tbody tr');
+            
+            rows.forEach(row => {
+                const roles = row.getAttribute('data-roles');
+                let show = false;
+                
+                switch(filter) {
+                    case 'all':
+                        show = true;
+                        break;
+                    case 'admin':
+                        show = roles.includes('admin');
+                        break;
+                    case 'user':
+                        show = roles.includes('user') && !roles.includes('admin');
+                        break;
+                }
+                
+                row.style.display = show ? '' : 'none';
+            });
+        }
+    </script>
+}
+
+<style>
+    .user-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 16px;
+    }
+    
+    .stats-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+</style>

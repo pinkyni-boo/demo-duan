@@ -22,7 +22,7 @@ namespace demo_duan.Areas.Admin.Controllers
             var movies = await _context.Movies
                 .Include(m => m.Category)
                 .Include(m => m.Showtimes)
-                .OrderByDescending(m => m.Id)
+                .OrderByDescending(m => m.ReleaseDate)
                 .ToListAsync();
             return View(movies);
         }
@@ -30,22 +30,16 @@ namespace demo_duan.Areas.Admin.Controllers
         // GET: Admin/Movies/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var movie = await _context.Movies
                 .Include(m => m.Category)
                 .Include(m => m.Showtimes)
-                .ThenInclude(s => s.Theater)
-                .Include(m => m.Tickets)
+                    .ThenInclude(s => s.Cinema)
+                        .ThenInclude(c => c.Theater)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            
-            if (movie == null)
-            {
-                return NotFound();
-            }
+
+            if (movie == null) return NotFound();
 
             return View(movie);
         }
@@ -53,134 +47,103 @@ namespace demo_duan.Areas.Admin.Controllers
         // GET: Admin/Movies/Create
         public async Task<IActionResult> Create()
         {
-            try
-            {
-                // Load categories for dropdown
-                var categories = await _context.Categories.ToListAsync();
-                ViewData["CategoryId"] = new SelectList(categories, "Id", "Name");
-                
-                // Create new movie with default values
-                var movie = new Movie
-                {
-                    ReleaseDate = DateTime.Today,
-                    Status = "Sắp chiếu"
-                };
-                
-                return View(movie);
-            }
-            catch (Exception ex)
-            {
-                // Log error
-                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải trang tạo phim: " + ex.Message;
-                return RedirectToAction(nameof(Index));
-            }
+            await LoadDropdownData();
+            return View();
         }
 
         // POST: Admin/Movies/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Title,Description,Duration,Img,Price,ReleaseDate,CategoryId")] Movie movie)
+        public async Task<IActionResult> Create([Bind("Title,Description,Duration,ReleaseDate,Price,Img,CategoryId,Language,Director,Cast,TrailerUrl,IsActive")] Movie movie)
         {
-            try
+            ModelState.Remove("Category");
+            ModelState.Remove("Showtimes");
+            ModelState.Remove("Tickets");
+
+            if (ModelState.IsValid)
             {
-                if (ModelState.IsValid)
+                try
                 {
-                    // Set auto-generated properties
-                    movie.UpdateStatusBasedOnReleaseDate();
-                    
+                    // Sửa dòng 62 - không gán string cho enum
+                    movie.UpdateStatusBasedOnReleaseDate(); // Method này sẽ set Status
                     _context.Add(movie);
                     await _context.SaveChangesAsync();
                     
-                    TempData["SuccessMessage"] = $"Phim '{movie.Title}' đã được tạo thành công!";
+                    TempData["SuccessMessage"] = "Phim đã được tạo thành công!";
                     return RedirectToAction(nameof(Index));
                 }
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tạo phim: " + ex.Message;
+                catch (Exception ex)
+                {
+                    TempData["ErrorMessage"] = "Lỗi khi tạo phim: " + ex.Message;
+                }
             }
 
-            // Reload categories if validation fails
-            var categories = await _context.Categories.ToListAsync();
-            ViewData["CategoryId"] = new SelectList(categories, "Id", "Name", movie.CategoryId);
+            await LoadDropdownData(movie);
             return View(movie);
         }
 
         // GET: Admin/Movies/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var movie = await _context.Movies.FindAsync(id);
-            if (movie == null)
-            {
-                return NotFound();
-            }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", movie.CategoryId);
+            if (movie == null) return NotFound();
+
+            await LoadDropdownData(movie);
             return View(movie);
         }
 
         // POST: Admin/Movies/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Duration,Img,Price,ReleaseDate,CategoryId")] Movie movie)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Duration,ReleaseDate,Price,Img,CategoryId,Language,Director,Cast,TrailerUrl,IsActive")] Movie movie)
         {
-            if (id != movie.Id)
-            {
-                return NotFound();
-            }
+            if (id != movie.Id) return NotFound();
+
+            ModelState.Remove("Category");
+            ModelState.Remove("Showtimes");
+            ModelState.Remove("Tickets");
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    // Tự động cập nhật Status dựa trên Release Date
                     movie.UpdateStatusBasedOnReleaseDate();
-                    
                     _context.Update(movie);
                     await _context.SaveChangesAsync();
                     
-                    TempData["SuccessMessage"] = $"Phim '{movie.Title}' đã được cập nhật với trạng thái: {movie.Status}";
+                    TempData["SuccessMessage"] = $"Phim đã được cập nhật! Trạng thái: {movie.StatusDisplayName}";
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!MovieExists(movie.Id))
-                    {
                         return NotFound();
-                    }
                     else
-                    {
                         throw;
-                    }
                 }
-                return RedirectToAction(nameof(Index));
+                catch (Exception ex)
+                {
+                    TempData["ErrorMessage"] = "Lỗi khi cập nhật: " + ex.Message;
+                }
             }
-            
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", movie.CategoryId);
+
+            await LoadDropdownData(movie);
             return View(movie);
         }
 
         // GET: Admin/Movies/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var movie = await _context.Movies
                 .Include(m => m.Category)
                 .Include(m => m.Showtimes)
-                .Include(m => m.Tickets)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            
-            if (movie == null)
-            {
-                return NotFound();
-            }
+
+            if (movie == null) return NotFound();
 
             return View(movie);
         }
@@ -190,23 +153,12 @@ namespace demo_duan.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var movie = await _context.Movies
-                .Include(m => m.Showtimes)
-                .Include(m => m.Tickets)
-                .FirstOrDefaultAsync(m => m.Id == id);
-                
+            var movie = await _context.Movies.FindAsync(id);
             if (movie != null)
             {
-                // Kiểm tra có showtimes và tickets không
-                if (movie.Showtimes.Any() || movie.Tickets.Any())
-                {
-                    TempData["Error"] = "Cannot delete movie with existing showtimes or tickets.";
-                    return RedirectToAction(nameof(Index));
-                }
-                
                 _context.Movies.Remove(movie);
                 await _context.SaveChangesAsync();
-                TempData["Success"] = "Movie deleted successfully!";
+                TempData["SuccessMessage"] = "Phim đã được xóa!";
             }
 
             return RedirectToAction(nameof(Index));
@@ -215,6 +167,15 @@ namespace demo_duan.Areas.Admin.Controllers
         private bool MovieExists(int id)
         {
             return _context.Movies.Any(e => e.Id == id);
+        }
+
+        private async Task LoadDropdownData(Movie? movie = null)
+        {
+            var categories = await _context.Categories
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            ViewBag.CategoryId = new SelectList(categories, "Id", "Name", movie?.CategoryId);
         }
     }
 }

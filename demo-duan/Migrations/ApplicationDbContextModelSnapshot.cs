@@ -246,6 +246,44 @@ namespace demo_duan.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("demo_duan.Models.Cinema", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Seats")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TheaterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TheaterId");
+
+                    b.ToTable("Cinemas");
+                });
+
             modelBuilder.Entity("demo_duan.Models.Movie", b =>
                 {
                     b.Property<int>("Id")
@@ -254,21 +292,39 @@ namespace demo_duan.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CategoryId")
+                    b.Property<string>("Cast")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Director")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("Duration")
                         .HasColumnType("int");
 
                     b.Property<string>("Img")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Language")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Rating")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("ReleaseDate")
@@ -276,17 +332,24 @@ namespace demo_duan.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TrailerUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("ReleaseDate");
+
+                    b.HasIndex("Title");
 
                     b.ToTable("Movies");
                 });
@@ -312,23 +375,39 @@ namespace demo_duan.Migrations
                     b.Property<int>("PaymentMethodId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("ProcessedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TicketId1")
                         .HasColumnType("int");
 
                     b.Property<string>("TransactionId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PaymentMethodId");
 
                     b.HasIndex("TicketId");
+
+                    b.HasIndex("TicketId1");
+
+                    b.HasIndex("TransactionId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Payments");
                 });
@@ -345,9 +424,12 @@ namespace demo_duan.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
                     b.Property<string>("Icon")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -356,6 +438,9 @@ namespace demo_duan.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("TransactionFee")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -373,11 +458,21 @@ namespace demo_duan.Migrations
                     b.Property<int>("AvailableSeats")
                         .HasColumnType("int");
 
+                    b.Property<int>("CinemaId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("MovieId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TheaterId")
                         .HasColumnType("int");
@@ -390,9 +485,13 @@ namespace demo_duan.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CinemaId");
+
                     b.HasIndex("MovieId");
 
                     b.HasIndex("TheaterId");
+
+                    b.HasIndex("Date", "Time");
 
                     b.ToTable("Showtimes");
                 });
@@ -406,28 +505,36 @@ namespace demo_duan.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<int>("Capacity")
-                        .HasColumnType("int");
+                    b.Property<string>("City")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Email")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Location")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("PhoneNumber")
+                    b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("TotalCapacity")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -445,29 +552,27 @@ namespace demo_duan.Migrations
                     b.Property<DateTime>("BookingDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("BookingReference")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<int>("MovieId")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("SeatNumber")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                    b.Property<int>("SeatNumber")
+                        .HasColumnType("int");
 
                     b.Property<int>("ShowtimeId")
                         .HasColumnType("int");
 
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TicketCode")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -478,9 +583,9 @@ namespace demo_duan.Migrations
 
                     b.HasIndex("MovieId");
 
-                    b.HasIndex("ShowtimeId", "SeatNumber")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Ticket_Showtime_Seat");
+                    b.HasIndex("ShowtimeId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Tickets");
                 });
@@ -536,12 +641,24 @@ namespace demo_duan.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("demo_duan.Models.Cinema", b =>
+                {
+                    b.HasOne("demo_duan.Models.Theater", "Theater")
+                        .WithMany("Cinemas")
+                        .HasForeignKey("TheaterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Theater");
+                });
+
             modelBuilder.Entity("demo_duan.Models.Movie", b =>
                 {
                     b.HasOne("demo_duan.Models.Category", "Category")
                         .WithMany("Movies")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Category");
                 });
@@ -551,22 +668,40 @@ namespace demo_duan.Migrations
                     b.HasOne("demo_duan.Models.PaymentMethod", "PaymentMethod")
                         .WithMany("Payments")
                         .HasForeignKey("PaymentMethodId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("demo_duan.Models.Ticket", "Ticket")
-                        .WithMany("Payments")
+                        .WithMany()
                         .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("demo_duan.Models.Ticket", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("TicketId1");
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("PaymentMethod");
 
                     b.Navigation("Ticket");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("demo_duan.Models.Showtime", b =>
                 {
+                    b.HasOne("demo_duan.Models.Cinema", "Cinema")
+                        .WithMany("Showtimes")
+                        .HasForeignKey("CinemaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("demo_duan.Models.Movie", "Movie")
                         .WithMany("Showtimes")
                         .HasForeignKey("MovieId")
@@ -576,8 +711,10 @@ namespace demo_duan.Migrations
                     b.HasOne("demo_duan.Models.Theater", "Theater")
                         .WithMany("Showtimes")
                         .HasForeignKey("TheaterId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Cinema");
 
                     b.Navigation("Movie");
 
@@ -598,14 +735,27 @@ namespace demo_duan.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Movie");
 
                     b.Navigation("Showtime");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("demo_duan.Models.Category", b =>
                 {
                     b.Navigation("Movies");
+                });
+
+            modelBuilder.Entity("demo_duan.Models.Cinema", b =>
+                {
+                    b.Navigation("Showtimes");
                 });
 
             modelBuilder.Entity("demo_duan.Models.Movie", b =>
@@ -627,6 +777,8 @@ namespace demo_duan.Migrations
 
             modelBuilder.Entity("demo_duan.Models.Theater", b =>
                 {
+                    b.Navigation("Cinemas");
+
                     b.Navigation("Showtimes");
                 });
 

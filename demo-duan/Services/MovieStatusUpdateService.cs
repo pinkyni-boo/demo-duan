@@ -1,6 +1,5 @@
-
-using demo_duan.Data;
 using Microsoft.EntityFrameworkCore;
+using demo_duan.Data;
 
 namespace demo_duan.Services
 {
@@ -24,40 +23,37 @@ namespace demo_duan.Services
                     using var scope = _serviceProvider.CreateScope();
                     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                    await UpdateMovieStatuses(context);
-                    
-                    // Chạy mỗi giờ
-                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                    var movies = await context.Movies
+                        .Where(m => m.IsActive)
+                        .ToListAsync(stoppingToken);
+
+                    var updatedCount = 0;
+                    foreach (var movie in movies)
+                    {
+                        var oldStatus = movie.Status;
+                        movie.UpdateStatusBasedOnReleaseDate();
+                        
+                        if (oldStatus != movie.Status)
+                        {
+                            context.Update(movie);
+                            updatedCount++;
+                            _logger.LogInformation($"Updated movie {movie.Title} status from {oldStatus} to {movie.Status}");
+                        }
+                    }
+
+                    if (updatedCount > 0)
+                    {
+                        await context.SaveChangesAsync(stoppingToken);
+                        _logger.LogInformation($"Updated status for {updatedCount} movies");
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error occurred while updating movie statuses");
-                    await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
                 }
-            }
-        }
 
-        private async Task UpdateMovieStatuses(ApplicationDbContext context)
-        {
-            var movies = await context.Movies.ToListAsync();
-            bool hasChanges = false;
-
-            foreach (var movie in movies)
-            {
-                var oldStatus = movie.Status;
-                movie.UpdateStatusBasedOnReleaseDate();
-                
-                if (oldStatus != movie.Status)
-                {
-                    _logger.LogInformation($"Updated movie '{movie.Title}' status from '{oldStatus}' to '{movie.Status}'");
-                    hasChanges = true;
-                }
-            }
-
-            if (hasChanges)
-            {
-                await context.SaveChangesAsync();
-                _logger.LogInformation("Movie statuses updated successfully");
+                // Chạy mỗi giờ
+                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
             }
         }
     }

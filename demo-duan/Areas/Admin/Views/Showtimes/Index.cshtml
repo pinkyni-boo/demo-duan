@@ -1,125 +1,288 @@
 @model IEnumerable<demo_duan.Models.Showtime>
-
 @{
-    ViewData["Title"] = "Showtimes";
+    ViewData["Title"] = "Quản lý Suất chiếu";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Showtimes</h1>
-    <a asp-action="Create" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Create New Showtime
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-clock me-2 text-primary"></i>Quản lý Suất chiếu</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
+                <li class="breadcrumb-item active">Showtimes</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Create" class="btn btn-admin-success">
+        <i class="fas fa-plus me-1"></i>Thêm suất chiếu
     </a>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Tổng suất chiếu</p>
+                        <h3 class="mb-0">@Model.Count()</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-}
-
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card text-white" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Hôm nay</p>
+                        <h3 class="mb-0">@Model.Count(s => s.Date.Date == DateTime.Today)</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-calendar-day fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-}
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card text-white" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Sắp tới</p>
+                        <h3 class="mb-0">@Model.Count(s => s.Date > DateTime.Today)</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-calendar-plus fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card stats-card text-white" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Vé đã bán</p>
+                        <h3 class="mb-0">@Model.Sum(s => s.Tickets.Count())</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-ticket-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Movie</th>
-                        <th>Theater</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Available Seats</th>
-                        <th>Tickets Sold</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        @foreach (var item in Model)
+<div class="card admin-card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-list me-2"></i>Danh sách suất chiếu</h6>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control form-control-sm" id="dateFilter" value="@DateTime.Today.ToString("yyyy-MM-dd")">
+                <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+                    <option value="">Tất cả</option>
+                    <option value="upcoming">Sắp tới</option>
+                    <option value="today">Hôm nay</option>
+                    <option value="past">Đã qua</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover admin-table mb-0" id="showtimesTable">
+                    <thead>
+                        <tr>
+                            <th>Phim</th>
+                            <th>Rạp chiếu</th>
+                            <th>Ngày chiếu</th>
+                            <th>Giờ chiếu</th>
+                            <th>Ghế trống</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var showtime in Model.OrderBy(s => s.Date).ThenBy(s => s.Time))
                         {
-                            var isPast = item.Date.Date < DateTime.Today || (item.Date.Date == DateTime.Today && item.Time < DateTime.Now.TimeOfDay);
-                            var ticketsSold = item.Tickets.Count;
-                            var occupancyRate = item.AvailableSeats > 0 ? (double)ticketsSold / (item.AvailableSeats + ticketsSold) * 100 : 0;
+                            var isUpcoming = showtime.Date > DateTime.Today || (showtime.Date == DateTime.Today && showtime.Time > DateTime.Now.TimeOfDay);
+                            var isToday = showtime.Date == DateTime.Today;
+                            var isPast = showtime.Date < DateTime.Today || (showtime.Date == DateTime.Today && showtime.Time < DateTime.Now.TimeOfDay);
                             
-                            <tr class="@(isPast ? "table-secondary" : "")">
-                                <td>@item.Id</td>
+                            <tr data-date="@showtime.Date.ToString("yyyy-MM-dd")" 
+                                data-status="@(isUpcoming ? "upcoming" : isToday ? "today" : "past")">
                                 <td>
-                                    <strong>@item.Movie.Title</strong>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            @if (!string.IsNullOrEmpty(showtime.Movie.Img))
+                                            {
+                                                <img src="@showtime.Movie.Img" alt="@showtime.Movie.Title" class="rounded" style="width: 50px; height: 70px; object-fit: cover;">
+                                            }
+                                            else
+                                            {
+                                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 70px;">
+                                                    <i class="fas fa-film text-muted"></i>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">@showtime.Movie.Title</h6>
+                                            <small class="text-muted">@showtime.Movie.Duration phút</small>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td>@item.Theater.Name</td>
-                                <td>@item.Date.ToString("dd/MM/yyyy")</td>
-                                <td>@item.Time.ToString(@"hh\:mm")</td>
                                 <td>
-                                    <span class="badge @(item.AvailableSeats > 10 ? "bg-success" : item.AvailableSeats > 0 ? "bg-warning" : "bg-danger")">
-                                        @item.AvailableSeats seats
-                                    </span>
+                                    <div>
+                                        <h6 class="mb-1">@showtime.Theater.Name</h6>
+                                        <small class="text-muted">@showtime.Theater.Address</small>
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">@ticketsSold sold</span>
+                                    <div class="date-info">
+                                        <div class="fw-bold">@showtime.Date.ToString("dd/MM/yyyy")</div>
+                                        <small class="text-muted">@showtime.Date.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"))</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="time-badge">@showtime.Time.ToString(@"hh\:mm")</span>
+                                </td>
+                                <td>
+                                    <div class="seat-info">
+                                        <span class="badge bg-success">@showtime.AvailableSeats ghế trống</span>
+                                        <div class="progress mt-1" style="height: 4px;">
+                                            <div class="progress-bar" style="width: @(showtime.TotalSeats > 0 ? (showtime.AvailableSeats * 100.0 / showtime.TotalSeats) : 0)%"></div>
+                                        </div>
+                                        <small class="text-muted">@showtime.TotalSeats tổng</small>
+                                    </div>
                                 </td>
                                 <td>
                                     @if (isPast)
                                     {
-                                        <span class="badge bg-secondary">Finished</span>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-check me-1"></i>Đã chiếu
+                                        </span>
                                     }
-                                    else if (item.AvailableSeats == 0)
+                                    else if (isToday)
                                     {
-                                        <span class="badge bg-danger">Sold Out</span>
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-play me-1"></i>Hôm nay
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success">Available</span>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-clock me-1"></i>Sắp chiếu
+                                        </span>
                                     }
                                 </td>
                                 <td>
-                                    <div class="btn-group" role="group">
-                                        <a asp-action="Details" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-info btn-sm" title="View Details">
+                                    <div class="action-buttons">
+                                        <a asp-action="Details" asp-route-id="@showtime.Id" class="btn btn-sm btn-outline-info" title="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         @if (!isPast)
                                         {
-                                            <a asp-action="Edit" asp-route-id="@item.Id" 
-                                               class="btn btn-outline-warning btn-sm" title="Edit">
+                                            <a asp-action="Edit" asp-route-id="@showtime.Id" class="btn btn-sm btn-outline-warning" title="Chỉnh sửa">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                         }
-                                        <a asp-action="Delete" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-danger btn-sm" title="Delete">
+                                        <a asp-action="Delete" asp-route-id="@showtime.Id" class="btn btn-sm btn-outline-danger" title="Xóa">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="9" class="text-center py-4">
-                                <div class="text-muted">
-                                    <i class="fas fa-calendar-times fa-3x mb-3"></i>
-                                    <p>No showtimes found.</p>
-                                    <a asp-action="Create" class="btn btn-primary">Create the first showtime</a>
-                                    <a asp-action="SeedData" class="btn btn-secondary ms-2">Add sample showtimes</a>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Chưa có suất chiếu nào</h5>
+                <p class="text-muted">Hãy tạo suất chiếu đầu tiên cho hệ thống</p>
+                <a asp-action="Create" class="btn btn-admin-success">
+                    <i class="fas fa-plus me-1"></i>Tạo suất chiếu
+                </a>
+            </div>
+        }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Date filter
+        document.getElementById('dateFilter').addEventListener('change', function() {
+            const selectedDate = this.value;
+            const rows = document.querySelectorAll('#showtimesTable tbody tr');
+            
+            rows.forEach(row => {
+                const rowDate = row.getAttribute('data-date');
+                if (!selectedDate || rowDate === selectedDate) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Status filter
+        document.getElementById('statusFilter').addEventListener('change', function() {
+            const selectedStatus = this.value;
+            const rows = document.querySelectorAll('#showtimesTable tbody tr');
+            
+            rows.forEach(row => {
+                const rowStatus = row.getAttribute('data-status');
+                if (!selectedStatus || rowStatus === selectedStatus) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    .time-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+    .date-info {
+        min-width: 120px;
+    }
+    
+    .seat-info {
+        min-width: 100px;
+    }
+    
+    .stats-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+</style>

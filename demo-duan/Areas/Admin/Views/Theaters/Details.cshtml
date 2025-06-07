@@ -1,135 +1,140 @@
 @model demo_duan.Models.Theater
-@using demo_duan.Models
 @{
-    ViewData["Title"] = "Theater Details";
+    ViewData["Title"] = "Chi tiết Rạp chiếu phim";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-building me-2 text-primary"></i>Chi tiết Rạp chiếu phim</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
+                <li class="breadcrumb-item"><a href="/Admin/Theaters">Theaters</a></li>
+                <li class="breadcrumb-item active">Details</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning me-2">
+            <i class="fas fa-edit me-1"></i>Chỉnh sửa
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Quay lại
+        </a>
+    </div>
+</div>
+
 <div class="row">
-    <div class="col-md-8">
-        <div class="card">
+    <div class="col-lg-8">
+        <div class="card admin-card">
             <div class="card-header">
-                <h4 class="mb-0">
-                    <i class="fas fa-building"></i> Theater Details
-                </h4>
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Thông tin rạp chiếu phim
+                </h6>
             </div>
             <div class="card-body">
                 <dl class="row">
-                    <dt class="col-sm-3">
-                        <i class="fas fa-hashtag"></i> ID
-                    </dt>
-                    <dd class="col-sm-9">@Model.Id</dd>
-                    
-                    <dt class="col-sm-3">
-                        <i class="fas fa-theater-masks"></i> Name
-                    </dt>
-                    <dd class="col-sm-9">
-                        <strong>@Model.Name</strong>
-                    </dd>
-                    
-                    <dt class="col-sm-3">
-                        <i class="fas fa-map-marker-alt"></i> Address
-                    </dt>
+                    <dt class="col-sm-3"><i class="fas fa-building text-primary me-2"></i>Tên rạp:</dt>
+                    <dd class="col-sm-9">@Model.Name</dd>
+
+                    <dt class="col-sm-3"><i class="fas fa-map-marker-alt text-danger me-2"></i>Địa chỉ:</dt>
                     <dd class="col-sm-9">@Model.Address</dd>
-                    
-                    <dt class="col-sm-3">
-                        <i class="fas fa-chair"></i> Capacity
-                    </dt>
+
+                    <dt class="col-sm-3"><i class="fas fa-chair text-info me-2"></i>Tổng ghế:</dt>
                     <dd class="col-sm-9">
-                        <span class="badge bg-info">@Model.Capacity seats</span>
+                        <span class="badge bg-info fs-6">@Model.TotalCapacity ghế</span>
                     </dd>
-                    
-                    <dt class="col-sm-3">
-                        <i class="fas fa-phone"></i> Phone
-                    </dt>
+
+                    @if (!string.IsNullOrEmpty(Model.Phone))
+                    {
+                        <dt class="col-sm-3"><i class="fas fa-phone text-success me-2"></i>Điện thoại:</dt>
+                        <dd class="col-sm-9">
+                            <a href="tel:@Model.Phone" class="text-decoration-none">@Model.Phone</a>
+                        </dd>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Email))
+                    {
+                        <dt class="col-sm-3"><i class="fas fa-envelope text-primary me-2"></i>Email:</dt>
+                        <dd class="col-sm-9">
+                            <a href="mailto:@Model.Email" class="text-decoration-none">@Model.Email</a>
+                        </dd>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.City))
+                    {
+                        <dt class="col-sm-3"><i class="fas fa-city text-secondary me-2"></i>Thành phố:</dt>
+                        <dd class="col-sm-9">@Model.City</dd>
+                    }
+
+                    <dt class="col-sm-3"><i class="fas fa-toggle-on text-warning me-2"></i>Trạng thái:</dt>
                     <dd class="col-sm-9">
-                        @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+                        @if (Model.IsActive)
                         {
-                            <a href="tel:@Model.PhoneNumber">@Model.PhoneNumber</a>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Hoạt động
+                            </span>
                         }
                         else
                         {
-                            <span class="text-muted">Not provided</span>
+                            <span class="badge bg-warning">
+                                <i class="fas fa-pause-circle me-1"></i>Tạm đóng
+                            </span>
                         }
                     </dd>
-                    
-                    <dt class="col-sm-3">
-                        <i class="fas fa-envelope"></i> Email
-                    </dt>
-                    <dd class="col-sm-9">
-                        @if (!string.IsNullOrEmpty(Model.Email))
-                        {
-                            <a href="mailto:@Model.Email">@Model.Email</a>
-                        }
-                        else
-                        {
-                            <span class="text-muted">Not provided</span>
-                        }
-                    </dd>
-                    
-                    <dt class="col-sm-3">
-                        <i class="fas fa-film"></i> Showtimes
-                    </dt>
-                    <dd class="col-sm-9">
-                        <span class="badge bg-success">@Model.Showtimes.Count active showtimes</span>
-                    </dd>
+
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <dt class="col-sm-3"><i class="fas fa-comment text-muted me-2"></i>Mô tả:</dt>
+                        <dd class="col-sm-9">@Model.Description</dd>
+                    }
                 </dl>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card">
+
+    <div class="col-lg-4">
+        <div class="card admin-card">
             <div class="card-header">
-                <h5 class="mb-0">Actions</h5>
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Thống kê
+                </h6>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
-                        <i class="fas fa-edit"></i> Edit Theater
-                    </a>
-                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
-                        <i class="fas fa-trash"></i> Delete Theater
-                    </a>
-                    <a asp-action="Index" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to List
-                    </a>
+                <div class="mb-3">
+                    <small class="text-muted">Số phòng chiếu</small>
+                    <div class="h4 text-primary">@Model.Cinemas.Count phòng</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Tổng số ghế</small>
+                    <div class="h4 text-info">@Model.TotalCapacity ghế</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Số suất chiếu</small>
+                    <div class="h4 text-success">@Model.Showtimes.Count suất</div>
                 </div>
             </div>
         </div>
+
+        @if (Model.Cinemas.Any())
+        {
+            <div class="card admin-card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-video me-2"></i>Phòng chiếu
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @foreach (var cinema in Model.Cinemas.OrderBy(c => c.Name))
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                            <span>@cinema.Name</span>
+                            <span class="badge bg-secondary">@cinema.Seats ghế</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     </div>
 </div>
-
-@if (Model.Showtimes.Any())
-{
-    <div class="mt-4">
-        <h5>Current Showtimes</h5>
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th>Movie</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var showtime in Model.Showtimes.OrderBy(s => s.Date).ThenBy(s => s.Time))
-                    {
-                        <tr>
-                            <td>@showtime.Movie?.Title</td>
-                            <td>@showtime.Date.ToString("dd/MM/yyyy")</td>
-                            <td>@showtime.Time.ToString(@"hh\:mm")</td>
-                            <td>
-                                <a asp-controller="Showtimes" asp-action="Details" asp-route-id="@showtime.Id" 
-                                   class="btn btn-sm btn-outline-info">
-                                    View
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-}

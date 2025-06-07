@@ -1,21 +1,21 @@
-@model IEnumerable<demo_duan.Models.Theater>
+@model IEnumerable<demo_duan.Models.Cinema>
 @{
-    ViewData["Title"] = "Quản lý Rạp chiếu phim";
+    ViewData["Title"] = "Quản lý Phòng chiếu";
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 mb-1"><i class="fas fa-building me-2 text-primary"></i>Quản lý Rạp chiếu phim</h1>
+        <h1 class="h3 mb-1"><i class="fas fa-video me-2 text-primary"></i>Quản lý Phòng chiếu</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
-                <li class="breadcrumb-item active">Theaters</li>
+                <li class="breadcrumb-item active">Cinemas</li>
             </ol>
         </nav>
     </div>
     <a asp-action="Create" class="btn btn-admin-success">
-        <i class="fas fa-plus me-1"></i>Thêm rạp mới
+        <i class="fas fa-plus me-1"></i>Thêm phòng chiếu
     </a>
 </div>
 
@@ -27,10 +27,10 @@
                 <div class="d-flex justify-content-between">
                     <div>
                         <h4 class="mb-0">@Model.Count()</h4>
-                        <p class="mb-0">Tổng số rạp</p>
+                        <p class="mb-0">Tổng phòng chiếu</p>
                     </div>
                     <div class="align-self-center">
-                        <i class="fas fa-building fa-2x opacity-75"></i>
+                        <i class="fas fa-video fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
@@ -42,8 +42,8 @@
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">@Model.Count(t => t.IsActive)</h4>
-                        <p class="mb-0">Rạp hoạt động</p>
+                        <h4 class="mb-0">@Model.Count(c => c.IsActive)</h4>
+                        <p class="mb-0">Phòng hoạt động</p>
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-check-circle fa-2x opacity-75"></i>
@@ -58,7 +58,7 @@
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">@Model.Sum(t => t.TotalCapacity)</h4>
+                        <h4 class="mb-0">@Model.Sum(c => c.Seats)</h4>
                         <p class="mb-0">Tổng ghế</p>
                     </div>
                     <div class="align-self-center">
@@ -74,11 +74,11 @@
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">@Model.Count(t => !t.IsActive)</h4>
-                        <p class="mb-0">Rạp tạm đóng</p>
+                        <h4 class="mb-0">@Model.GroupBy(c => c.TheaterId).Count()</h4>
+                        <p class="mb-0">Rạp có phòng chiếu</p>
                     </div>
                     <div class="align-self-center">
-                        <i class="fas fa-pause-circle fa-2x opacity-75"></i>
+                        <i class="fas fa-building fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
@@ -86,71 +86,56 @@
     </div>
 </div>
 
-<!-- Theaters Table -->
+<!-- Cinemas Table -->
 <div class="card admin-card">
     <div class="card-header">
         <h6 class="mb-0">
-            <i class="fas fa-list me-2"></i>Danh sách rạp chiếu phim
+            <i class="fas fa-list me-2"></i>Danh sách phòng chiếu
         </h6>
     </div>
     <div class="card-body">
         @if (Model.Any())
         {
             <div class="table-responsive">
-                <table class="table table-hover align-middle" id="theatersTable">
+                <table class="table table-hover align-middle" id="cinemasTable">
                     <thead class="table-dark">
                         <tr>
-                            <th><i class="fas fa-building me-1"></i>Tên rạp</th>
-                            <th><i class="fas fa-map-marker-alt me-1"></i>Địa chỉ</th>
-                            <th><i class="fas fa-chair me-1"></i>Tổng ghế</th>
-                            <th><i class="fas fa-phone me-1"></i>Điện thoại</th>
-                            <th><i class="fas fa-envelope me-1"></i>Email</th>
+                            <th><i class="fas fa-building me-1"></i>Rạp chiếu</th>
+                            <th><i class="fas fa-video me-1"></i>Tên phòng</th>
+                            <th><i class="fas fa-chair me-1"></i>Số ghế</th>
+                            <th><i class="fas fa-tag me-1"></i>Loại phòng</th>
                             <th><i class="fas fa-toggle-on me-1"></i>Trạng thái</th>
                             <th class="text-center"><i class="fas fa-cogs me-1"></i>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in Model.OrderBy(t => t.Name))
+                        @foreach (var item in Model)
                         {
                             <tr class="@(item.IsActive ? "" : "table-secondary")">
                                 <td>
-                                    <strong>@item.Name</strong>
-                                    @if (!string.IsNullOrEmpty(item.City))
-                                    {
-                                        <br><small class="text-muted">@item.City</small>
-                                    }
+                                    <strong>@item.Theater.Name</strong>
+                                    <br><small class="text-muted">@item.Theater.City</small>
                                 </td>
                                 <td>
-                                    <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                                    @item.Address
+                                    <strong>@item.Name</strong>
+                                    @if (!string.IsNullOrEmpty(item.Description))
+                                    {
+                                        <br><small class="text-muted">@item.Description</small>
+                                    }
                                 </td>
                                 <td>
                                     <span class="badge bg-info">
-                                        <i class="fas fa-chair me-1"></i>@item.TotalCapacity ghế
+                                        <i class="fas fa-chair me-1"></i>@item.Seats ghế
                                     </span>
                                 </td>
                                 <td>
-                                    @if (!string.IsNullOrEmpty(item.Phone))
+                                    @if (!string.IsNullOrEmpty(item.Type))
                                     {
-                                        <a href="tel:@item.Phone" class="text-decoration-none">
-                                            <i class="fas fa-phone text-success me-1"></i>@item.Phone
-                                        </a>
+                                        <span class="badge bg-secondary">@item.Type</span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted">Chưa có</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(item.Email))
-                                    {
-                                        <a href="mailto:@item.Email" class="text-decoration-none">
-                                            <i class="fas fa-envelope text-primary me-1"></i>@item.Email
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Chưa có</span>
+                                        <span class="text-muted">Chưa xác định</span>
                                     }
                                 </td>
                                 <td>
@@ -192,11 +177,11 @@
         else
         {
             <div class="text-center py-5">
-                <i class="fas fa-building fa-4x text-muted mb-3"></i>
-                <h5 class="text-muted">Chưa có rạp chiếu phim nào</h5>
-                <p class="text-muted mb-3">Hãy thêm rạp chiếu phim đầu tiên</p>
+                <i class="fas fa-video fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Chưa có phòng chiếu nào</h5>
+                <p class="text-muted mb-3">Hãy thêm phòng chiếu đầu tiên</p>
                 <a asp-action="Create" class="btn btn-admin-success">
-                    <i class="fas fa-plus me-1"></i>Thêm rạp mới
+                    <i class="fas fa-plus me-1"></i>Thêm phòng chiếu
                 </a>
             </div>
         }
@@ -206,7 +191,7 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            $('#theatersTable').DataTable({
+            $('#cinemasTable').DataTable({
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/Vietnamese.json"
                 },

@@ -1,0 +1,84 @@
+@model demo_duan.Models.ViewModels.UserRoleViewModel
+@{
+    ViewData["Title"] = "Quản lý Vai trò";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-user-cog me-2 text-primary"></i>Quản lý Vai trò</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
+                <li class="breadcrumb-item"><a href="/Admin/Users">Users</a></li>
+                <li class="breadcrumb-item active">Manage Roles</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+<div class="card admin-card">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="fas fa-user me-2"></i>
+            Quản lý vai trò cho: <strong>@Model.UserName</strong>
+        </h6>
+    </div>
+    <div class="card-body">
+        <form asp-action="ManageRoles" method="post">
+            <input type="hidden" asp-for="UserId" />
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-info-circle me-2 text-info"></i>Thông tin người dùng</h6>
+                    <div class="bg-light p-3 rounded mb-3">
+                        <p><strong>Username:</strong> @Model.UserName</p>
+                        <p><strong>Email:</strong> @Model.Email</p>
+                        <p><strong>Vai trò hiện tại:</strong> 
+                            @if (Model.UserRoles.Any())
+                            {
+                                @foreach (var role in Model.UserRoles)
+                                {
+                                    <span class="badge bg-primary me-1">@role</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Chưa có vai trò</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6><i class="fas fa-user-shield me-2 text-warning"></i>Chọn vai trò mới</h6>
+                    <div class="bg-light p-3 rounded">
+                        @foreach (var role in Model.AllRoles)
+                        {
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="roles" value="@role" 
+                                       @(Model.UserRoles.Contains(role) ? "checked" : "") id="role_@role">
+                                <label class="form-check-label fw-bold" for="role_@role">
+                                    <i class="fas @(role == "Admin" ? "fa-user-shield text-danger" : "fa-user text-primary") me-2"></i>
+                                    @role
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-admin-success me-2">
+                    <i class="fas fa-save me-1"></i>Cập nhật vai trò
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

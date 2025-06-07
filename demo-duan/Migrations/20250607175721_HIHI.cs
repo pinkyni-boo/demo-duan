@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace demo_duan.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreateWithIdentity : Migration
+    public partial class HIHI : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -72,8 +72,10 @@ namespace demo_duan.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Icon = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    Icon = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
+                    TransactionFee = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DisplayOrder = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -87,11 +89,13 @@ namespace demo_duan.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Capacity = table.Column<int>(type: "int", nullable: false),
-                    Location = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    PhoneNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                    Address = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    City = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    TotalCapacity = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -210,14 +214,20 @@ namespace demo_duan.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     Duration = table.Column<int>(type: "int", nullable: false),
-                    Img = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     ReleaseDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    CategoryId = table.Column<int>(type: "int", nullable: true)
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Img = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    CategoryId = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Rating = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Language = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Director = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Cast = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    TrailerUrl = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -227,7 +237,31 @@ namespace demo_duan.Migrations
                         column: x => x.CategoryId,
                         principalTable: "Categories",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Cinemas",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    TheaterId = table.Column<int>(type: "int", nullable: false),
+                    Seats = table.Column<int>(type: "int", nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Cinemas", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Cinemas_Theaters_TheaterId",
+                        column: x => x.TheaterId,
+                        principalTable: "Theaters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -238,14 +272,23 @@ namespace demo_duan.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     MovieId = table.Column<int>(type: "int", nullable: false),
                     TheaterId = table.Column<int>(type: "int", nullable: false),
+                    CinemaId = table.Column<int>(type: "int", nullable: false),
                     Date = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Time = table.Column<TimeSpan>(type: "time", nullable: false),
                     AvailableSeats = table.Column<int>(type: "int", nullable: false),
-                    TotalSeats = table.Column<int>(type: "int", nullable: false)
+                    TotalSeats = table.Column<int>(type: "int", nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Showtimes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Showtimes_Cinemas_CinemaId",
+                        column: x => x.CinemaId,
+                        principalTable: "Cinemas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Showtimes_Movies_MovieId",
                         column: x => x.MovieId,
@@ -257,7 +300,7 @@ namespace demo_duan.Migrations
                         column: x => x.TheaterId,
                         principalTable: "Theaters",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -266,18 +309,24 @@ namespace demo_duan.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
-                    MovieId = table.Column<int>(type: "int", nullable: false),
                     ShowtimeId = table.Column<int>(type: "int", nullable: false),
-                    SeatNumber = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    BookingReference = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    BookingDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    MovieId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
+                    SeatNumber = table.Column<int>(type: "int", nullable: false),
+                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    BookingDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    TicketCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Tickets", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Tickets_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Tickets_Movies_MovieId",
                         column: x => x.MovieId,
@@ -300,27 +349,41 @@ namespace demo_duan.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     TicketId = table.Column<int>(type: "int", nullable: false),
                     PaymentMethodId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     TransactionId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ProcessedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    TicketId1 = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Payments", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_Payments_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Payments_PaymentMethods_PaymentMethodId",
                         column: x => x.PaymentMethodId,
                         principalTable: "PaymentMethods",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Payments_Tickets_TicketId",
                         column: x => x.TicketId,
                         principalTable: "Tickets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Payments_Tickets_TicketId1",
+                        column: x => x.TicketId1,
+                        principalTable: "Tickets",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -363,9 +426,24 @@ namespace demo_duan.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Cinemas_TheaterId",
+                table: "Cinemas",
+                column: "TheaterId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Movies_CategoryId",
                 table: "Movies",
                 column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Movies_ReleaseDate",
+                table: "Movies",
+                column: "ReleaseDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Movies_Title",
+                table: "Movies",
+                column: "Title");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Payments_PaymentMethodId",
@@ -378,6 +456,31 @@ namespace demo_duan.Migrations
                 column: "TicketId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Payments_TicketId1",
+                table: "Payments",
+                column: "TicketId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Payments_TransactionId",
+                table: "Payments",
+                column: "TransactionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Payments_UserId",
+                table: "Payments",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Showtimes_CinemaId",
+                table: "Showtimes",
+                column: "CinemaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Showtimes_Date_Time",
+                table: "Showtimes",
+                columns: new[] { "Date", "Time" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Showtimes_MovieId",
                 table: "Showtimes",
                 column: "MovieId");
@@ -388,15 +491,19 @@ namespace demo_duan.Migrations
                 column: "TheaterId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Ticket_Showtime_Seat",
-                table: "Tickets",
-                columns: new[] { "ShowtimeId", "SeatNumber" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Tickets_MovieId",
                 table: "Tickets",
                 column: "MovieId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Tickets_ShowtimeId",
+                table: "Tickets",
+                column: "ShowtimeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Tickets_UserId",
+                table: "Tickets",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -424,16 +531,19 @@ namespace demo_duan.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
-
-            migrationBuilder.DropTable(
                 name: "PaymentMethods");
 
             migrationBuilder.DropTable(
                 name: "Tickets");
 
             migrationBuilder.DropTable(
+                name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
                 name: "Showtimes");
+
+            migrationBuilder.DropTable(
+                name: "Cinemas");
 
             migrationBuilder.DropTable(
                 name: "Movies");

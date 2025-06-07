@@ -1,0 +1,119 @@
+@model IEnumerable<demo_duan.Models.Movie>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle movie-table">
+            <thead class="table-dark">
+                <tr>
+                    <th><i class="fas fa-image me-1"></i>Poster</th>
+                    <th><i class="fas fa-film me-1"></i>Tên phim</th>
+                    <th><i class="fas fa-tag me-1"></i>Danh mục</th>
+                    <th><i class="fas fa-calendar me-1"></i>Ngày phát hành</th>
+                    <th><i class="fas fa-clock me-1"></i>Thời lượng</th>
+                    <th><i class="fas fa-dollar-sign me-1"></i>Giá vé</th>
+                    <th><i class="fas fa-star me-1"></i>Đánh giá</th>
+                    <th><i class="fas fa-info-circle me-1"></i>Trạng thái</th>
+                    <th class="text-center"><i class="fas fa-cogs me-1"></i>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.OrderByDescending(m => m.ReleaseDate))
+                {
+                    <tr class="@(!item.IsActive ? "table-secondary" : "")">
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.Img))
+                            {
+                                <img src="@item.Img" alt="@item.Title" class="img-thumbnail" style="width: 60px; height: 80px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="width: 60px; height: 80px;">
+                                    <i class="fas fa-image text-muted fa-2x"></i>
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            <div>
+                                <strong>@item.Title</strong>
+                                @if (!string.IsNullOrEmpty(item.Director))
+                                {
+                                    <br><small class="text-muted">Đạo diễn: @item.Director</small>
+                                }
+                                @if (!string.IsNullOrEmpty(item.Language))
+                                {
+                                    <br><small class="text-muted">@item.Language</small>
+                                }
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">@item.Category.Name</span>
+                        </td>
+                        <td>
+                            @item.ReleaseDate.ToString("dd/MM/yyyy")
+                            @if (item.ReleaseDate > DateTime.Today)
+                            {
+                                <br><small class="text-info">(@((item.ReleaseDate - DateTime.Today).Days) ngày nữa)</small>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge bg-info">@item.Duration phút</span>
+                        </td>
+                        <td>
+                            <strong class="text-success">@item.Price.ToString("N0") VNĐ</strong>
+                        </td>
+                        <td>
+                            @if (item.Rating > 0)
+                            {
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-warning text-dark me-1">@item.Rating.ToString("0.0")</span>
+                                    <i class="fas fa-star text-warning"></i>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa có</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge @item.StatusBadgeClass">
+                                <i class="fas fa-circle me-1"></i>@item.StatusDisplayName
+                            </span>
+                            @if (!item.IsActive)
+                            {
+                                <br><span class="badge bg-danger mt-1">Tạm ngưng</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a asp-action="Details" asp-route-id="@item.Id" 
+                                   class="btn btn-outline-info btn-sm" title="Xem chi tiết">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" 
+                                   class="btn btn-outline-warning btn-sm" title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" 
+                                   class="btn btn-outline-danger btn-sm" title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="fas fa-film fa-4x text-muted mb-3"></i>
+        <h5 class="text-muted">Không có phim nào</h5>
+        <p class="text-muted mb-3">Hãy thêm phim đầu tiên</p>
+        <a asp-action="Create" class="btn btn-admin-success">
+            <i class="fas fa-plus me-1"></i>Thêm phim mới
+        </a>
+    </div>
+}

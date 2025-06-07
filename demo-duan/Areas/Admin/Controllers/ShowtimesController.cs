@@ -4,8 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using demo_duan.Data;
 using demo_duan.Models;
 
-namespace demo_duan.Controllers
+namespace demo_duan.Areas.Admin.Controllers
 {
+    [Area("Admin")]
     public class ShowtimesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -15,12 +16,13 @@ namespace demo_duan.Controllers
             _context = context;
         }
 
-        // GET: Showtimes
+        // GET: Admin/Showtimes
         public async Task<IActionResult> Index()
         {
             var showtimes = await _context.Showtimes
                 .Include(s => s.Movie)
                 .Include(s => s.Theater)
+                .Include(s => s.Cinema)
                 .Include(s => s.Tickets)
                 .OrderBy(s => s.Date)
                 .ThenBy(s => s.Time)
@@ -28,276 +30,193 @@ namespace demo_duan.Controllers
             return View(showtimes);
         }
 
-        // GET: Showtimes/Details/5
+        // GET: Admin/Showtimes/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var showtime = await _context.Showtimes
                 .Include(s => s.Movie)
                 .Include(s => s.Theater)
+                .Include(s => s.Cinema)
                 .Include(s => s.Tickets)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (showtime == null)
-            {
-                return NotFound();
-            }
+            if (showtime == null) return NotFound();
 
             return View(showtime);
         }
 
-        // GET: Showtimes/Create
+        // GET: Admin/Showtimes/Create
         public async Task<IActionResult> Create()
-        {
-            await LoadDropdownData();
-            return View();
-        }
-
-        // POST: Showtimes/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MovieId,TheaterId,Date,Time,AvailableSeats")] Showtime showtime)
         {
             try
             {
-                Console.WriteLine($"Creating showtime - MovieId: {showtime.MovieId}, TheaterId: {showtime.TheaterId}");
-                Console.WriteLine($"Date: {showtime.Date}, Time: {showtime.Time}");
+                var movies = await _context.Movies.Where(m => m.ReleaseDate <= DateTime.Today.AddDays(90)).ToListAsync();
+                var theaters = await _context.Theaters.Where(t => t.IsActive).ToListAsync();
 
-                if (ModelState.IsValid)
+                if (!movies.Any())
                 {
-                    // Kiểm tra conflict về thời gian
-                    var conflict = await _context.Showtimes
-                        .AnyAsync(s => s.TheaterId == showtime.TheaterId && 
-                                      s.Date.Date == showtime.Date.Date && 
-                                      s.Time == showtime.Time);
-
-                    if (conflict)
-                    {
-                        ModelState.AddModelError("", "This theater already has a showtime at the selected date and time.");
-                    }
-                    else
-                    {
-                        // Nếu AvailableSeats không được set, lấy từ Theater capacity
-                        if (showtime.AvailableSeats <= 0)
-                        {
-                            var theater = await _context.Theaters.FindAsync(showtime.TheaterId);
-                            showtime.AvailableSeats = theater?.Capacity ?? 100;
-                        }
-
-                        _context.Add(showtime);
-                        await _context.SaveChangesAsync();
-                        TempData["Success"] = "Showtime created successfully!";
-                        return RedirectToAction(nameof(Index));
-                    }
+                    TempData["ErrorMessage"] = "Chưa có phim nào. Vui lòng thêm phim trước.";
+                    return RedirectToAction("Index", "Movies");
                 }
 
-                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                if (!theaters.Any())
                 {
-                    Console.WriteLine($"Validation Error: {error.ErrorMessage}");
+                    TempData["ErrorMessage"] = "Chưa có rạp nào. Vui lòng thêm rạp trước.";
+                    return RedirectToAction("Index", "Theaters");
+                }
+
+                ViewBag.MovieId = new SelectList(movies, "Id", "Title");
+                ViewBag.TheaterId = new SelectList(theaters, "Id", "Name");
+                ViewBag.CinemaId = new SelectList(new List<Cinema>(), "Id", "Name");
+                
+                var showtime = new Showtime
+                {
+                    Date = DateTime.Today.AddDays(1),
+                    Time = new TimeSpan(19, 0, 0),
+                    Status = "Scheduled"
+                };
+                
+                return View(showtime);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi khi tải trang: " + ex.Message;
+                return RedirectToAction("Index");
+            }
+        }
+
+        // POST: Admin/Showtimes/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Showtime showtime)
+        {
+            try
+            {
+                // Remove validation for navigation properties
+                ModelState.Remove("Movie");
+                ModelState.Remove("Theater");
+                ModelState.Remove("Cinema");
+                ModelState.Remove("Tickets");
+
+                // Custom validation
+                if (showtime.MovieId <= 0)
+                    ModelState.AddModelError("MovieId", "Vui lòng chọn phim.");
+
+                if (showtime.TheaterId <= 0)
+                    ModelState.AddModelError("TheaterId", "Vui lòng chọn rạp chiếu.");
+
+                if (showtime.CinemaId <= 0)
+                    ModelState.AddModelError("CinemaId", "Vui lòng chọn phòng chiếu.");
+
+                if (showtime.Date < DateTime.Today)
+                    ModelState.AddModelError("Date", "Ngày chiếu không thể là ngày trong quá khứ.");
+
+                // Check for conflicting showtimes in the same cinema
+                var conflictingShowtime = await _context.Showtimes
+                    .Where(s => s.CinemaId == showtime.CinemaId && 
+                               s.Date.Date == showtime.Date.Date && 
+                               s.Time == showtime.Time &&
+                               s.Status != "Cancelled")
+                    .FirstOrDefaultAsync();
+
+                if (conflictingShowtime != null)
+                    ModelState.AddModelError("", "Đã có suất chiếu khác tại phòng này vào thời gian này.");
+
+                // Validate cinema belongs to theater
+                var cinema = await _context.Cinemas
+                    .Where(c => c.Id == showtime.CinemaId && c.TheaterId == showtime.TheaterId)
+                    .FirstOrDefaultAsync();
+
+                if (cinema == null)
+                    ModelState.AddModelError("CinemaId", "Phòng chiếu không thuộc rạp đã chọn.");
+
+                if (ModelState.IsValid && cinema != null)
+                {
+                    // Set seats and price from cinema and movie
+                    showtime.TotalSeats = cinema.Seats;
+                    showtime.AvailableSeats = cinema.Seats;
+                    
+                    // Get movie price
+                    var movie = await _context.Movies.FindAsync(showtime.MovieId);
+                    showtime.Price = movie?.Price ?? 0;
+
+                    _context.Add(showtime);
+                    await _context.SaveChangesAsync();
+                    
+                    TempData["SuccessMessage"] = "Suất chiếu đã được tạo thành công!";
+                    return RedirectToAction("Index");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error creating showtime: {ex.Message}");
-                TempData["Error"] = "An error occurred while creating the showtime.";
+                ModelState.AddModelError("", "Lỗi khi tạo suất chiếu: " + ex.Message);
             }
 
+            // Reload dropdowns for the view
             await LoadDropdownData(showtime);
             return View(showtime);
         }
 
-        // GET: Showtimes/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        // Thêm method này vào ShowtimesController
+
+        [HttpGet]
+        public async Task<IActionResult> GetCinemasByTheater(int theaterId)
         {
-            if (id == null)
+            try
             {
-                return NotFound();
-            }
+                var cinemas = await _context.Cinemas
+                    .Where(c => c.TheaterId == theaterId && c.IsActive)
+                    .Select(c => new { 
+                        id = c.Id, 
+                        name = c.Name, 
+                        seats = c.Seats,
+                        type = c.Type ?? "Standard"
+                    })
+                    .OrderBy(c => c.name)
+                    .ToListAsync();
 
-            var showtime = await _context.Showtimes.FindAsync(id);
-            if (showtime == null)
+                return Json(cinemas);
+            }
+            catch (Exception ex)
             {
-                return NotFound();
+                return Json(new { error = "Lỗi khi tải phòng chiếu: " + ex.Message });
             }
-
-            await LoadDropdownData(showtime);
-            return View(showtime);
-        }
-
-        // POST: Showtimes/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,MovieId,TheaterId,Date,Time,AvailableSeats")] Showtime showtime)
-        {
-            if (id != showtime.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    // Kiểm tra conflict (ngoại trừ chính nó)
-                    var conflict = await _context.Showtimes
-                        .AnyAsync(s => s.Id != showtime.Id &&
-                                      s.TheaterId == showtime.TheaterId && 
-                                      s.Date.Date == showtime.Date.Date && 
-                                      s.Time == showtime.Time);
-
-                    if (conflict)
-                    {
-                        ModelState.AddModelError("", "This theater already has a showtime at the selected date and time.");
-                    }
-                    else
-                    {
-                        _context.Update(showtime);
-                        await _context.SaveChangesAsync();
-                        TempData["Success"] = "Showtime updated successfully!";
-                        return RedirectToAction(nameof(Index));
-                    }
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ShowtimeExists(showtime.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-            }
-
-            await LoadDropdownData(showtime);
-            return View(showtime);
-        }
-
-        // GET: Showtimes/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var showtime = await _context.Showtimes
-                .Include(s => s.Movie)
-                .Include(s => s.Theater)
-                .Include(s => s.Tickets)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (showtime == null)
-            {
-                return NotFound();
-            }
-
-            return View(showtime);
-        }
-
-        // POST: Showtimes/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var showtime = await _context.Showtimes
-                .Include(s => s.Tickets)
-                .FirstOrDefaultAsync(s => s.Id == id);
-
-            if (showtime != null)
-            {
-                if (showtime.Tickets.Any())
-                {
-                    TempData["Error"] = "Cannot delete showtime because tickets have been booked for this showtime.";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                _context.Showtimes.Remove(showtime);
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Showtime deleted successfully!";
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool ShowtimeExists(int id)
-        {
-            return _context.Showtimes.Any(e => e.Id == id);
         }
 
         private async Task LoadDropdownData(Showtime? showtime = null)
         {
-            ViewData["MovieId"] = new SelectList(
-                await _context.Movies.ToListAsync(), 
-                "Id", "Title", showtime?.MovieId);
+            // Sửa điều kiện lọc Movie
+            var movies = await _context.Movies
+                .Where(m => m.IsActive == true) // Sửa thành == true thay vì chỉ m.IsActive
+                .OrderBy(m => m.Title)
+                .ToListAsync();
+
+            var theaters = await _context.Theaters
+                .Where(t => t.IsActive)
+                .OrderBy(t => t.Name)
+                .ToListAsync();
+
+            ViewBag.MovieId = new SelectList(movies, "Id", "Title", showtime?.MovieId);
+            ViewBag.TheaterId = new SelectList(theaters, "Id", "Name");
             
-            ViewData["TheaterId"] = new SelectList(
-                await _context.Theaters.ToListAsync(), 
-                "Id", "Name", showtime?.TheaterId);
-        }
-
-        // Seed sample showtimes
-        public async Task<IActionResult> SeedData()
-        {
-            try
+            // Load cinemas if showtime has cinema selected
+            if (showtime?.CinemaId != null)
             {
-                if (!await _context.Showtimes.AnyAsync())
+                var cinema = await _context.Cinemas
+                    .Include(c => c.Theater)
+                    .FirstOrDefaultAsync(c => c.Id == showtime.CinemaId);
+                    
+                if (cinema != null)
                 {
-                    var movies = await _context.Movies.ToListAsync();
-                    var theaters = await _context.Theaters.ToListAsync();
-
-                    if (!movies.Any() || !theaters.Any())
-                    {
-                        return Json(new { success = false, message = "Please create movies and theaters first" });
-                    }
-
-                    var showtimes = new List<Showtime>();
-                    var today = DateTime.Today;
-
-                    // Tạo showtimes cho 7 ngày tới
-                    for (int day = 0; day < 7; day++)
-                    {
-                        var date = today.AddDays(day);
+                    var cinemas = await _context.Cinemas
+                        .Where(c => c.TheaterId == cinema.TheaterId && c.IsActive)
+                        .ToListAsync();
                         
-                        foreach (var theater in theaters)
-                        {
-                            // Mỗi rạp có 3 suất chiếu mỗi ngày
-                            var times = new TimeSpan[] { 
-                                new TimeSpan(14, 0, 0), // 2:00 PM
-                                new TimeSpan(17, 30, 0), // 5:30 PM
-                                new TimeSpan(20, 0, 0)   // 8:00 PM
-                            };
-
-                            for (int i = 0; i < times.Length && i < movies.Count; i++)
-                            {
-                                showtimes.Add(new Showtime
-                                {
-                                    MovieId = movies[i % movies.Count].Id,
-                                    TheaterId = theater.Id,
-                                    Date = date,
-                                    Time = times[i],
-                                    AvailableSeats = theater.Capacity
-                                });
-                            }
-                        }
-                    }
-
-                    _context.Showtimes.AddRange(showtimes);
-                    await _context.SaveChangesAsync();
-
-                    return Json(new { success = true, message = $"Created {showtimes.Count} sample showtimes" });
+                    ViewBag.CinemaId = new SelectList(cinemas, "Id", "Name", showtime.CinemaId);
+                    ViewBag.SelectedTheaterId = cinema.TheaterId;
                 }
-
-                return Json(new { success = true, message = "Showtimes already exist" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
             }
         }
     }

@@ -1,12 +1,12 @@
 ﻿@model IEnumerable<demo_duan.Models.Movie>
 @{
-    ViewData["Title"] = "Movies Management";
+    ViewData["Title"] = "Quản lý Phim";
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 mb-1"><i class="fas fa-film me-2 text-primary"></i>Movies Management</h1>
+        <h1 class="h3 mb-1"><i class="fas fa-film me-2 text-primary"></i>Quản lý Phim</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
@@ -15,67 +15,70 @@
         </nav>
     </div>
     <a asp-action="Create" class="btn btn-admin-success">
-        <i class="fas fa-plus me-1"></i>Add New Movie
+        <i class="fas fa-plus me-1"></i>Thêm phim mới
     </a>
 </div>
 
-<!-- Stats Cards -->
+<!-- Statistics Cards -->
 <div class="row mb-4">
-    <div class="col-xl-3 col-md-6">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <p class="mb-1 text-white-50">Total Movies</p>
-                        <h3 class="mb-0">@Model.Count()</h3>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card admin-stat-card bg-gradient-primary">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">@Model.Count()</h4>
+                        <p class="mb-0">Tổng số phim</p>
                     </div>
-                    <div class="text-white-50">
-                        <i class="fas fa-film fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <p class="mb-1 text-white-50">Đang chiếu</p>
-                        <h3 class="mb-0">@Model.Count(m => m.Status == "Active")</h3>
-                    </div>
-                    <div class="text-white-50">
-                        <i class="fas fa-play fa-2x"></i>
+                    <div class="align-self-center">
+                        <i class="fas fa-film fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <p class="mb-1 text-white-50">Sắp chiếu</p>
-                        <h3 class="mb-0">@Model.Count(m => m.Status == "Coming Soon")</h3>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card admin-stat-card bg-gradient-success">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">@Model.Count(m => m.Status == demo_duan.Models.MovieStatus.NowShowing)</h4>
+                        <p class="mb-0">Đang chiếu</p>
                     </div>
-                    <div class="text-white-50">
-                        <i class="fas fa-clock fa-2x"></i>
+                    <div class="align-self-center">
+                        <i class="fas fa-play-circle fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <p class="mb-1 text-white-50">Total Revenue</p>
-                        <h3 class="mb-0">$@Model.Sum(m => m.Price).ToString("N0")</h3>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card admin-stat-card bg-gradient-info">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">@Model.Count(m => m.Status == demo_duan.Models.MovieStatus.ComingSoon)</h4>
+                        <p class="mb-0">Sắp chiếu</p>
                     </div>
-                    <div class="text-white-50">
-                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card admin-stat-card bg-gradient-warning">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">@Model.Sum(m => m.Showtimes.Count)</h4>
+                        <p class="mb-0">Tổng suất chiếu</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar fa-2x opacity-75"></i>
                     </div>
                 </div>
             </div>
@@ -83,144 +86,52 @@
     </div>
 </div>
 
-<!-- Movies Table -->
+<!-- Filter Tabs -->
 <div class="card admin-card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Movies</h5>
-        <div class="d-flex gap-2">
-            <div class="input-group" style="width: 300px;">
-                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                <input type="text" class="form-control" id="searchInput" placeholder="Search movies...">
-            </div>
-            <select class="form-select" id="statusFilter" style="width: 150px;">
-                <option value="">All Status</option>
-                <option value="Now Showing">Now Showing</option>
-                <option value="Coming Soon">Coming Soon</option>
-                <option value="Ended">Ended</option>
-            </select>
-        </div>
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" id="movieTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                    <i class="fas fa-list me-1"></i>Tất cả (@Model.Count())
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="showing-tab" data-bs-toggle="tab" data-bs-target="#showing" type="button" role="tab">
+                    <i class="fas fa-play-circle me-1"></i>Đang chiếu (@Model.Count(m => m.Status == demo_duan.Models.MovieStatus.NowShowing))
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="coming-tab" data-bs-toggle="tab" data-bs-target="#coming" type="button" role="tab">
+                    <i class="fas fa-clock me-1"></i>Sắp chiếu (@Model.Count(m => m.Status == demo_duan.Models.MovieStatus.ComingSoon))
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ended-tab" data-bs-toggle="tab" data-bs-target="#ended" type="button" role="tab">
+                    <i class="fas fa-stop-circle me-1"></i>Ngừng chiếu (@Model.Count(m => m.Status == demo_duan.Models.MovieStatus.NotShowing))
+                </button>
+            </li>
+        </ul>
     </div>
-    <div class="card-body p-0">
-        @if (Model.Any())
-        {
-            <div class="table-responsive">
-                <table class="table table-hover admin-table mb-0" id="moviesTable">
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;">Poster</th>
-                            <th>Title</th>
-                            <th>Category</th>
-                            <th>Duration</th>
-                            <th>Release Date</th>
-                            <th>Price</th>
-                            <th>Status</th>
-                            <th style="width: 120px;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var movie in Model)
-                        {
-                            <tr>
-                                <td>
-                                    <div class="poster-thumb">
-                                        @if (!string.IsNullOrEmpty(movie.Img))
-                                        {
-                                            <img src="@movie.Img" alt="@movie.Title" class="rounded" 
-                                                 style="width: 60px; height: 80px; object-fit: cover;">
-                                        }
-                                        else
-                                        {
-                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
-                                                 style="width: 60px; height: 80px;">
-                                                <i class="fas fa-film text-muted"></i>
-                                            </div>
-                                        }
-                                    </div>
-                                </td>
-                                <td>
-                                    <div>
-                                        <h6 class="mb-1">@movie.Title</h6>
-                                        <small class="text-muted">ID: @movie.Id</small>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">@(movie.Category?.Name ?? "Chưa phân loại")</span>
-                                </td>
-                                <td>
-                                    <span class="text-muted">@movie.Duration min</span>
-                                </td>
-                                <td>
-                                    @movie.ReleaseDate.ToString("MMM dd, yyyy")
-                                </td>
-                                <td>
-                                    <strong class="text-success">$@movie.Price.ToString("N2")</strong>
-                                </td>
-                                <td>
-                                    @if (movie.ComputedStatus == "Đang chiếu")
-                                    {
-                                        <span class="badge bg-success"><i class="fas fa-play me-1"></i>Đang chiếu</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>Sắp chiếu</span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a asp-action="Details" asp-route-id="@movie.Id" 
-                                           class="btn btn-sm btn-outline-info" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a asp-action="Edit" asp-route-id="@movie.Id" 
-                                           class="btn btn-sm btn-outline-primary" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                onclick="deleteMovie(@movie.Id, '@movie.Title')" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+    <div class="card-body">
+        <div class="tab-content" id="movieTabContent">
+            <!-- All Movies Tab -->
+            <div class="tab-pane fade show active" id="all" role="tabpanel">
+                @await Html.PartialAsync("_MovieTable", Model)
             </div>
-        }
-        else
-        {
-            <div class="text-center py-5">
-                <i class="fas fa-film fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No movies found</h5>
-                <p class="text-muted mb-3">Get started by adding your first movie</p>
-                <a asp-action="Create" class="btn btn-admin-success">
-                    <i class="fas fa-plus me-1"></i>Create the first movie
-                </a>
+            
+            <!-- Now Showing Tab -->
+            <div class="tab-pane fade" id="showing" role="tabpanel">
+                @await Html.PartialAsync("_MovieTable", Model.Where(m => m.Status == demo_duan.Models.MovieStatus.NowShowing))
             </div>
-        }
-    </div>
-</div>
-
-<!-- Delete Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Confirm Delete</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            
+            <!-- Coming Soon Tab -->
+            <div class="tab-pane fade" id="coming" role="tabpanel">
+                @await Html.PartialAsync("_MovieTable", Model.Where(m => m.Status == demo_duan.Models.MovieStatus.ComingSoon))
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the movie "<span id="movieTitle"></span>"?</p>
-                <p class="text-muted small">This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="deleteForm" method="post" style="display: inline;">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash me-1"></i>Delete
-                    </button>
-                </form>
+            
+            <!-- Not Showing Tab -->
+            <div class="tab-pane fade" id="ended" role="tabpanel">
+                @await Html.PartialAsync("_MovieTable", Model.Where(m => m.Status == demo_duan.Models.MovieStatus.NotShowing))
             </div>
         </div>
     </div>
@@ -229,34 +140,19 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            // Search functionality
-            $('#searchInput').on('keyup', function() {
-                var value = $(this).val().toLowerCase();
-                filterTable();
-            });
-            
-            // Status filter
-            $('#statusFilter').on('change', function() {
-                filterTable();
-            });
-            
-            function filterTable() {
-                var searchValue = $('#searchInput').val().toLowerCase();
-                var statusValue = $('#statusFilter').val();
-                
-                $('#moviesTable tbody tr').filter(function() {
-                    var textMatch = $(this).text().toLowerCase().indexOf(searchValue) > -1;
-                    var statusMatch = statusValue === '' || $(this).find('.badge').text().indexOf(statusValue) > -1;
-                    
-                    $(this).toggle(textMatch && statusMatch);
+            // Initialize DataTables for each tab
+            $('.movie-table').each(function() {
+                $(this).DataTable({
+                    "language": {
+                        "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/Vietnamese.json"
+                    },
+                    "pageLength": 10,
+                    "order": [[ 1, "desc" ]], // Sort by release date desc
+                    "columnDefs": [
+                        { "orderable": false, "targets": -1 }
+                    ]
                 });
-            }
+            });
         });
-        
-        function deleteMovie(id, title) {
-            $('#movieTitle').text(title);
-            $('#deleteForm').attr('action', '/Admin/Movies/Delete/' + id);
-            new bootstrap.Modal(document.getElementById('deleteModal')).show();
-        }
     </script>
 }

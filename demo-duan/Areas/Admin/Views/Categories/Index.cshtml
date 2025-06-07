@@ -1,101 +1,118 @@
 @model IEnumerable<demo_duan.Models.Category>
-
 @{
-    ViewData["Title"] = "Categories";
+    ViewData["Title"] = "Quản lý Thể loại";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Categories</h1>
-    <a asp-action="Create" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Create New Category
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-tags me-2 text-primary"></i>Quản lý Thể loại</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
+                <li class="breadcrumb-item active">Categories</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Create" class="btn btn-admin-success">
+        <i class="fas fa-plus me-1"></i>Thêm thể loại
     </a>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Tổng thể loại</p>
+                        <h3 class="mb-0">@Model.Count()</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-tags fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-}
-
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Có phim</p>
+                        <h3 class="mb-0">@Model.Count(c => c.Movies.Any())</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-film fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-}
+</div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Movies Count</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        @foreach (var item in Model)
+<div class="card admin-card">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-list me-2"></i>Danh sách thể loại</h6>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên thể loại</th>
+                            <th>Mô tả</th>
+                            <th>Số phim</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var category in Model)
                         {
                             <tr>
-                                <td>@item.Id</td>
+                                <td><strong>@category.Id</strong></td>
                                 <td>
-                                    <strong>@item.Name</strong>
+                                    <h6 class="mb-0">@category.Name</h6>
                                 </td>
                                 <td>
-                                    @if (!string.IsNullOrEmpty(item.Description))
-                                    {
-                                        @(item.Description.Length > 80 ? item.Description.Substring(0, 80) + "..." : item.Description)
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">No description</span>
-                                    }
+                                    <span class="text-muted">@(category.Description ?? "Chưa có mô tả")</span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">@item.Movies.Count movies</span>
+                                    <span class="badge bg-info">@category.Movies.Count phim</span>
                                 </td>
                                 <td>
-                                    <div class="btn-group" role="group">
-                                        <a asp-action="Details" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-info btn-sm" title="View Details">
+                                    <div class="action-buttons">
+                                        <a asp-action="Details" asp-route-id="@category.Id" class="btn btn-sm btn-outline-info" title="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a asp-action="Edit" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-warning btn-sm" title="Edit">
+                                        <a asp-action="Edit" asp-route-id="@category.Id" class="btn btn-sm btn-outline-warning" title="Chỉnh sửa">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a asp-action="Delete" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-danger btn-sm" title="Delete">
+                                        <a asp-action="Delete" asp-route-id="@category.Id" class="btn btn-sm btn-outline-danger" title="Xóa">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-4">
-                                <div class="text-muted">
-                                    <i class="fas fa-inbox fa-3x mb-3"></i>
-                                    <p>No categories found.</p>
-                                    <a asp-action="Create" class="btn btn-primary">Create the first category</a>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Chưa có thể loại nào</h5>
+                <p class="text-muted">Hãy tạo thể loại đầu tiên cho hệ thống</p>
+                <a asp-action="Create" class="btn btn-admin-success">
+                    <i class="fas fa-plus me-1"></i>Tạo thể loại
+                </a>
+            </div>
+        }
     </div>
 </div>
