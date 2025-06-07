@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using demo_duan.Data;
 using demo_duan.Models;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 
 namespace demo_duan.Controllers
 {
@@ -20,21 +21,34 @@ namespace demo_duan.Controllers
         // GET: Home - Trang chủ
         public async Task<IActionResult> Index()
         {
-            var featuredMovies = await _context.Movies
-                .Include(m => m.Category)
-                .Include(m => m.Showtimes.Where(s => s.Date >= DateTime.Today))
-                .ThenInclude(s => s.Theater)
-                .Where(m => m.Showtimes.Any(s => s.Date >= DateTime.Today))
-                .OrderByDescending(m => m.ReleaseDate)
-                .Take(8)
-                .ToListAsync();
+            try
+            {
+                // Load data từ database hiện tại
+                var featuredMovies = await _context.Movies
+                    .Include(m => m.Category)
+                    .Include(m => m.Showtimes.Where(s => s.Date >= DateTime.Today))
+                    .ThenInclude(s => s.Theater)
+                    .Where(m => m.Showtimes.Any(s => s.Date >= DateTime.Today))
+                    .OrderByDescending(m => m.ReleaseDate)
+                    .Take(8)
+                    .ToListAsync();
 
-            var categories = await _context.Categories.ToListAsync();
-            
-            ViewBag.Categories = categories;
-            ViewBag.FeaturedMovies = featuredMovies;
+                var categories = await _context.Categories.ToListAsync();
+                
+                ViewBag.Categories = categories;
+                ViewBag.FeaturedMovies = featuredMovies;
 
-            return View();
+                _logger.LogInformation($"Loaded {featuredMovies.Count} movies and {categories.Count} categories");
+                
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading home page data");
+                ViewBag.Categories = new List<Category>();
+                ViewBag.FeaturedMovies = new List<Movie>();
+                return View();
+            }
         }
 
         // GET: Home/Movies - Tất cả phim cho người dùng
@@ -149,7 +163,8 @@ namespace demo_duan.Controllers
             return View(movie);
         }
 
-        // GET: Home/BookTicket/5 - Chọn rạp và suất chiếu
+        // GET: Home/BookTicket/5 - Yêu cầu đăng nhập
+        [Authorize]
         public async Task<IActionResult> BookTicket(int? id)
         {
             if (id == null)
@@ -177,7 +192,8 @@ namespace demo_duan.Controllers
             return View(movie);
         }
 
-        // GET: Home/SelectSeats/5 - Chọn ghế
+        // GET: Home/SelectSeats/5 - Yêu cầu đăng nhập
+        [Authorize]
         public async Task<IActionResult> SelectSeats(int? showtimeId)
         {
             if (showtimeId == null)
@@ -197,7 +213,6 @@ namespace demo_duan.Controllers
                 return NotFound();
             }
 
-            // Kiểm tra thời gian
             var showtimeDateTime = showtime.Date.Date.Add(showtime.Time);
             if (showtimeDateTime < DateTime.Now)
             {
@@ -211,10 +226,15 @@ namespace demo_duan.Controllers
                 return RedirectToAction("BookTicket", new { id = showtime.MovieId });
             }
 
-            var bookedSeats = showtime.Tickets.Select(t => t.Seat).ToList();
+            var bookedSeats = showtime.Tickets.Select(t => t.SeatNumber).ToList();
             ViewBag.BookedSeats = bookedSeats;
 
             return View(showtime);
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
@@ -224,11 +244,6 @@ namespace demo_duan.Controllers
             { 
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier 
             });
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
         }
     }
 }

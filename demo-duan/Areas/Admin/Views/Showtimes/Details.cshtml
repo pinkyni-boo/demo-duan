@@ -147,14 +147,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var ticket in Model.Tickets.OrderBy(t => t.Seat))
+                    @foreach (var ticket in Model.Tickets.OrderBy(t => t.SeatNumber))
                     {
                         <tr>
                             <td>@ticket.Id</td>
-                            <td>@ticket.UserName</td>
-                            <td><span class="badge bg-primary">@ticket.Seat</span></td>
+                            <td>@ticket.UserId</td>
+                            <td><span class="badge bg-primary">@ticket.SeatNumber</span></td>
                             <td>$@ticket.Price</td>
-                            <td>@ticket.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@ticket.BookingDate.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>
                                 <span class="badge bg-@(ticket.Status == "Confirmed" ? "success" : ticket.Status == "Cancelled" ? "danger" : "warning")">
                                     @ticket.Status

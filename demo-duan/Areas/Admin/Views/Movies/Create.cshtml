@@ -1,124 +1,219 @@
-﻿@model demo_duan.Models.Movie
-
+﻿@using demo_duan
+@using demo_duan.Models
+@using Microsoft.AspNetCore.Identity
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+@model demo_duan.Models.Movie
 @{
-    ViewData["Title"] = "Create Movie";
+    ViewData["Title"] = "Tạo Phim Mới";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="fas fa-plus me-2"></i>Create New Movie</h1>
-    <a asp-action="Index" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left"></i> Back to List
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-plus me-2 text-primary"></i>Tạo Phim Mới</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index">Movies</a></li>
+                <li class="breadcrumb-item active">Create</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Quay lại
     </a>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Movie Information</h5>
-            </div>
-            <div class="card-body">
-                <form asp-action="Create" enctype="multipart/form-data">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    
+<form asp-action="Create" method="post">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card admin-card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Thông tin cơ bản</h6>
+                </div>
+                <div class="card-body">
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-12">
                             <div class="mb-3">
-                                <label asp-for="Title" class="form-label">Title</label>
-                                <input asp-for="Title" class="form-control" placeholder="Enter movie title" />
-                                <span asp-validation-for="Title" class="text-danger"></span>
+                                <label asp-for="Title" class="form-label">
+                                    <i class="fas fa-film me-1"></i>Tên phim *
+                                </label>
+                                <input asp-for="Title" class="form-control" placeholder="Nhập tên phim..." />
+                                <span asp-validation-for="Title" class="text-danger small"></span>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        
+                        <div class="col-md-6">
                             <div class="mb-3">
-                                <label asp-for="CategoryId" class="form-label">Category</label>
+                                <label asp-for="CategoryId" class="form-label">
+                                    <i class="fas fa-tags me-1"></i>Thể loại
+                                </label>
                                 <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
-                                    <option value="">-- Select Category --</option>
+                                    <option value="">Chọn thể loại</option>
                                 </select>
-                                <span asp-validation-for="CategoryId" class="text-danger"></span>
+                                <span asp-validation-for="CategoryId" class="text-danger small"></span>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Description" class="form-label">Description</label>
-                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Enter movie description"></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4">
+                        
+                        <div class="col-md-6">
                             <div class="mb-3">
-                                <label asp-for="Duration" class="form-label">Duration (minutes)</label>
-                                <input asp-for="Duration" class="form-control" type="number" min="1" placeholder="120" />
-                                <span asp-validation-for="Duration" class="text-danger"></span>
+                                <label asp-for="Duration" class="form-label">
+                                    <i class="fas fa-clock me-1"></i>Thời lượng (phút) *
+                                </label>
+                                <input asp-for="Duration" class="form-control" type="number" min="1" max="500" placeholder="120" />
+                                <span asp-validation-for="Duration" class="text-danger small"></span>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        
+                        <div class="col-md-6">
                             <div class="mb-3">
-                                <label asp-for="ReleaseDate" class="form-label">Release Date</label>
-                                <input asp-for="ReleaseDate" class="form-control" type="date" />
-                                <span asp-validation-for="ReleaseDate" class="text-danger"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label asp-for="Price" class="form-label">Price ($)</label>
+                                <label asp-for="Price" class="form-label">
+                                    <i class="fas fa-dollar-sign me-1"></i>Giá vé *
+                                </label>
                                 <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" placeholder="10.00" />
-                                <span asp-validation-for="Price" class="text-danger"></span>
+                                <span asp-validation-for="Price" class="text-danger small"></span>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Img" class="form-label">Poster URL</label>
-                        <input asp-for="Img" class="form-control" placeholder="https://example.com/poster.jpg" />
-                        <span asp-validation-for="Img" class="text-danger"></span>
-                        <div class="form-text">Enter the URL of the movie poster image</div>
-                    </div>
-
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a asp-action="Index" class="btn btn-secondary me-md-2">Cancel</a>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save"></i> Create Movie
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Poster Preview</h6>
-            </div>
-            <div class="card-body text-center">
-                <div id="poster-preview" class="mb-3">
-                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
-                        <i class="fas fa-film fa-3x text-muted"></i>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="ReleaseDate" class="form-label">
+                                    <i class="fas fa-calendar me-1"></i>Ngày phát hành *
+                                </label>
+                                <input asp-for="ReleaseDate" class="form-control" type="date" id="releaseDate" />
+                                <span asp-validation-for="ReleaseDate" class="text-danger small"></span>
+                                <div class="form-text">
+                                    <small id="statusPreview" class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>Chọn ngày để xem trạng thái
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label asp-for="Img" class="form-label">
+                                    <i class="fas fa-image me-1"></i>URL Poster
+                                </label>
+                                <input asp-for="Img" class="form-control" placeholder="https://example.com/poster.jpg" />
+                                <span asp-validation-for="Img" class="text-danger small"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label asp-for="Description" class="form-label">
+                                    <i class="fas fa-align-left me-1"></i>Mô tả
+                                </label>
+                                <textarea asp-for="Description" class="form-control" rows="4" placeholder="Mô tả về phim..."></textarea>
+                                <span asp-validation-for="Description" class="text-danger small"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <small class="text-muted">Preview will appear when you enter poster URL</small>
+                
+                <div class="card-footer">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-admin-success">
+                            <i class="fas fa-save me-1"></i>Lưu phim
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Hủy
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card admin-card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-eye me-2"></i>Preview Poster</h6>
+                </div>
+                <div class="card-body">
+                    <div id="poster-preview" class="poster-preview text-center">
+                        <i class="fas fa-film fa-3x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Preview sẽ hiển thị khi bạn nhập URL poster</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</form>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
     
     <script>
-        // Poster preview
-        $('#Img').on('input', function() {
-            var url = $(this).val();
-            var preview = $('#poster-preview');
+        $(document).ready(function() {
+            // Poster preview
+            $('#Img').on('input', function() {
+                var url = $(this).val();
+                var preview = $('#poster-preview');
+                
+                if (url) {
+                    preview.html(`
+                        <img src="${url}" class="img-fluid rounded" style="max-height: 300px;" 
+                             onerror="showImageError()" />
+                    `);
+                } else {
+                    preview.html(`
+                        <i class="fas fa-film fa-3x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Preview sẽ hiển thị khi bạn nhập URL poster</p>
+                    `);
+                }
+            });
             
-            if (url) {
-                preview.html('<img src="' + url + '" class="img-fluid" style="max-height: 300px;" onerror="this.style.display=\'none\'; $(this).parent().html(\'<div class=\\\"bg-light d-flex align-items-center justify-content-center\\\" style=\\\"height: 300px;\\\"><i class=\\\"fas fa-exclamation-triangle fa-3x text-warning\\\"></i></div>\');" />');
-            } else {
-                preview.html('<div class="bg-light d-flex align-items-center justify-content-center" style="height: 300px;"><i class="fas fa-film fa-3x text-muted"></i></div>');
-            }
+            // Status preview
+            $('#releaseDate').on('change', function() {
+                updateStatusPreview();
+            });
+            
+            // Auto-focus
+            $('#Title').focus();
+            
+            // Initial status
+            updateStatusPreview();
         });
+        
+        function updateStatusPreview() {
+            var releaseDate = $('#releaseDate').val();
+            var statusPreview = $('#statusPreview');
+            
+            if (releaseDate) {
+                var today = new Date();
+                var release = new Date(releaseDate);
+                
+                today.setHours(0, 0, 0, 0);
+                release.setHours(0, 0, 0, 0);
+                
+                if (release <= today) {
+                    statusPreview.html(`
+                        <i class="fas fa-play me-1 text-success"></i>
+                        <span class="text-success">Trạng thái: Đang chiếu</span>
+                    `);
+                } else {
+                    statusPreview.html(`
+                        <i class="fas fa-clock me-1 text-warning"></i>
+                        <span class="text-warning">Trạng thái: Sắp chiếu</span>
+                    `);
+                }
+            } else {
+                statusPreview.html(`
+                    <i class="fas fa-info-circle me-1"></i>
+                    <span class="text-muted">Chọn ngày để xem trạng thái</span>
+                `);
+            }
+        }
+        
+        function showImageError() {
+            $('#poster-preview').html(`
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-2"></i>
+                <p class="text-muted mb-0">Không thể tải được hình ảnh</p>
+            `);
+        }
     </script>
 }

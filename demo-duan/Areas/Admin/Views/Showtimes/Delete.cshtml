@@ -49,7 +49,7 @@
                         <ul>
                             @foreach (var ticket in Model.Tickets.Take(5))
                             {
-                                <li>Ticket #@ticket.Id - @ticket.UserName (@ticket.Seat)</li>
+                                <li>Ticket #@ticket.Id - @ticket.UserId (@ticket.SeatNumber)</li>
                             }
                             @if (Model.Tickets.Count > 5)
                             {

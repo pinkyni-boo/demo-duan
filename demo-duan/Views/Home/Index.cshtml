@@ -1,39 +1,230 @@
 ﻿@model IEnumerable<demo_duan.Models.Movie>
 @{
     ViewData["Title"] = "Home Page";
+    var featuredMovies = ViewBag.FeaturedMovies as List<demo_duan.Models.Movie> ?? new List<demo_duan.Models.Movie>();
+    var categories = ViewBag.Categories as List<demo_duan.Models.Category> ?? new List<demo_duan.Models.Category>();
+    @* Layout = "_Layout"; *@
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome to Movie Booking</h1>
-    <p>Book your favorite movies now!</p>
+<!-- Hero Section -->
+<div class="hero-section bg-primary text-white py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="fas fa-film me-3"></i>Welcome to Movie Booking
+                </h1>
+                <p class="lead mb-4">Book your favorite movies now!</p>
+                <div class="d-flex gap-3">
+                    <a asp-action="Movies" class="btn btn-light btn-lg">
+                        <i class="fas fa-ticket-alt me-2"></i>Browse Movies
+                    </a>
+                    <a asp-action="NowShowing" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-play me-2"></i>Now Showing
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <i class="fas fa-video fa-5x opacity-75"></i>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <h2>Now Showing</h2>
+<!-- Quick Stats -->
+<div class="container mb-5">
+    <div class="row text-center">
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-film fa-3x text-primary mb-3"></i>
+                    <h4 class="fw-bold">@featuredMovies.Count</h4>
+                    <p class="text-muted mb-0">Movies Available</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-tags fa-3x text-success mb-3"></i>
+                    <h4 class="fw-bold">@categories.Count</h4>
+                    <p class="text-muted mb-0">Categories</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                    <h4 class="fw-bold">24/7</h4>
+                    <p class="text-muted mb-0">Online Booking</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-users fa-3x text-info mb-3"></i>
+                    <h4 class="fw-bold">1000+</h4>
+                    <p class="text-muted mb-0">Happy Customers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Now Showing Section -->
+<div class="container mb-5">
+    <div class="row align-items-center mb-4">
+        <div class="col">
+            <h2 class="fw-bold">
+                <i class="fas fa-play-circle me-2 text-primary"></i>Now Showing
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a asp-action="NowShowing" class="btn btn-outline-primary">
+                View All <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    @if (featuredMovies.Any())
+    {
         <div class="row">
-            @if (Model != null && Model.Any())
+            @foreach (var movie in featuredMovies.Take(4))
             {
-                @foreach (var movie in Model.Take(6))
-                {
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <img src="@movie.Img" class="card-img-top" alt="@movie.Title" style="height: 300px; object-fit: cover;">
-                            <div class="card-body">
-                                <h5 class="card-title">@movie.Title</h5>
-                                <p class="card-text">@movie.Category</p>
-                                <p class="card-text">Duration: @movie.Duration minutes</p>
-                                <p class="card-text">Price: $@movie.Price</p>
-                                <a asp-controller="Movies" asp-action="Details" asp-route-id="@movie.Id" class="btn btn-primary">View Details</a>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 movie-card">
+                        <div class="position-relative">
+                            @if (!string.IsNullOrEmpty(movie.Img))
+                            {
+                                <img src="@movie.Img" class="card-img-top" style="height: 300px; object-fit: cover;" alt="@movie.Title">
+                            }
+                            else
+                            {
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+                                    <i class="fas fa-film fa-3x text-muted"></i>
+                                </div>
+                            }
+                            <span class="badge bg-success position-absolute top-0 start-0 m-2">Now Showing</span>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@movie.Title</h5>
+                            <p class="card-text">
+                                <small class="text-muted">@(movie.Category?.Name ?? "Chưa phân loại")</small>
+                            </p>
+                            <p class="card-text text-muted small">
+                                <i class="fas fa-clock"></i> @movie.Duration min
+                            </p>
+                            <p class="card-text flex-grow-1">
+                                @{
+                                    var description = movie.Description ?? "";
+                                    var shortDesc = description.Length > 80 ? description.Substring(0, 80) + "..." : description;
+                                }
+                                @shortDesc
+                            </p>
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="h5 text-success mb-0">$@movie.Price</span>
+                                </div>
+                                <a asp-action="MovieDetails" asp-route-id="@movie.Id" class="btn btn-primary w-100">
+                                    <i class="fas fa-info-circle"></i> View Details
+                                </a>
                             </div>
                         </div>
                     </div>
-                }
+                </div>
             }
-            else
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-film fa-5x text-muted mb-3"></i>
+            <h3>No movies available at the moment</h3>
+            <p class="text-muted">Please check back later for new releases!</p>
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
             {
-                <p>No movies available at the moment.</p>
+                <a asp-area="Admin" asp-controller="Movies" asp-action="Create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add First Movie
+                </a>
+            }
+        </div>
+    }
+</div>
+
+<!-- Categories Section -->
+@if (categories.Any())
+{
+    <div class="container mb-5">
+        <h2 class="fw-bold mb-4">
+            <i class="fas fa-tags me-2 text-primary"></i>Browse by Category
+        </h2>
+        <div class="row">
+            @foreach (var category in categories.Take(6))
+            {
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <a asp-action="Movies" asp-route-categoryId="@category.Id" class="text-decoration-none">
+                        <div class="card category-card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-film fa-2x text-primary mb-2"></i>
+                                <h6 class="card-title mb-0">@category.Name</h6>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Call to Action -->
+<div class="bg-light py-5">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-3">Ready to Watch?</h2>
+        <p class="lead mb-4">Join thousands of movie lovers and book your tickets today!</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a asp-action="Movies" class="btn btn-primary btn-lg">
+                <i class="fas fa-ticket-alt me-2"></i>Book Now
+            </a>
+            @if (User.Identity?.IsAuthenticated != true)
+            {
+                <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-user-plus me-2"></i>Sign Up
+                </a>
             }
         </div>
     </div>
 </div>
+
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.movie-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.movie-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.category-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e0e0e0;
+}
+
+.category-card:hover {
+    background-color: var(--bs-primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.category-card:hover .fa-film {
+    color: white !important;
+}
+</style>

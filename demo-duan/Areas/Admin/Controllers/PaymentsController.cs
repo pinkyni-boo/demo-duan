@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using demo_duan.Data;
 using demo_duan.Models;
 using Microsoft.AspNetCore.Authorization;
 
-namespace demo_duan.Controllers
+namespace demo_duan.Areas.Admin.Controllers
 {
-    [Authorize]
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
     public class PaymentsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -16,18 +18,21 @@ namespace demo_duan.Controllers
             _context = context;
         }
 
-        // GET: Payments
+        // GET: Admin/Payments
         public async Task<IActionResult> Index()
         {
             var payments = await _context.Payments
                 .Include(p => p.Ticket)
-                .Include(p => p.User)
+                    .ThenInclude(t => t.Showtime)
+                    .ThenInclude(s => s.Movie)
+                .Include(p => p.PaymentMethod)
                 .OrderByDescending(p => p.PaymentDate)
                 .ToListAsync();
+
             return View(payments);
         }
 
-        // GET: Payments/Details/5
+        // GET: Admin/Payments/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -37,9 +42,13 @@ namespace demo_duan.Controllers
 
             var payment = await _context.Payments
                 .Include(p => p.Ticket)
-                .ThenInclude(t => t.Movie)
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                    .ThenInclude(t => t.Showtime)
+                    .ThenInclude(s => s.Movie)
+                .Include(p => p.Ticket)
+                    .ThenInclude(t => t.Showtime)
+                    .ThenInclude(s => s.Theater)
+                .Include(p => p.PaymentMethod)
+                .FirstOrDefaultAsync(p => p.Id == id);
 
             if (payment == null)
             {
@@ -49,73 +58,129 @@ namespace demo_duan.Controllers
             return View(payment);
         }
 
-        // GET: Payments/Process/5 (Process payment for ticket)
-        public async Task<IActionResult> Process(int? ticketId)
+        // GET: Admin/Payments/Create
+        public async Task<IActionResult> Create()
         {
-            if (ticketId == null)
-            {
-                return NotFound();
-            }
-
-            var ticket = await _context.Tickets
-                .Include(t => t.Movie)
-                .Include(t => t.Showtime)
-                .FirstOrDefaultAsync(t => t.Id == ticketId);
-
-            if (ticket == null)
-            {
-                return NotFound();
-            }
-
-            var payment = new Payment
-            {
-                TicketId = ticket.Id,
-                Amount = ticket.TotalPrice,
-                UserId = ticket.UserId
-            };
-
-            ViewBag.PaymentMethods = await _context.PaymentMethods
-                .Where(pm => pm.IsActive)
-                .ToListAsync();
-
-            return View(payment);
+            ViewData["TicketId"] = new SelectList(
+                await _context.Tickets
+                    .Include(t => t.Showtime)
+                    .ThenInclude(s => s.Movie)
+                    .Select(t => new { 
+                        t.Id, 
+                        DisplayText = $"{t.Showtime.Movie.Title} - {t.SeatNumber} - {t.BookingReference}"
+                    })
+                    .ToListAsync(), 
+                "Id", "DisplayText");
+            
+            ViewData["PaymentMethodId"] = new SelectList(_context.PaymentMethods, "Id", "Name");
+            return View();
         }
 
-        // POST: Payments/Process
+        // POST: Admin/Payments/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Process([Bind("TicketId,Amount,PaymentMethod,CardHolderName,CardNumber,BankName,Notes")] Payment payment)
+        public async Task<IActionResult> Create([Bind("TicketId,PaymentMethodId,Amount,Status,TransactionId,Notes")] Payment payment)
         {
             if (ModelState.IsValid)
             {
                 payment.PaymentDate = DateTime.Now;
-                payment.CreatedAt = DateTime.Now;
-                payment.TransactionId = GenerateTransactionId();
-                payment.PaymentStatus = "Completed"; // In real app, this would be set by payment gateway
-                
                 _context.Add(payment);
-                
-                // Update ticket status
-                var ticket = await _context.Tickets.FindAsync(payment.TicketId);
-                if (ticket != null)
-                {
-                    ticket.Status = "Confirmed";
-                    _context.Update(ticket);
-                }
-                
                 await _context.SaveChangesAsync();
-                return RedirectToAction("Success", new { id = payment.Id });
+                return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.PaymentMethods = await _context.PaymentMethods
-                .Where(pm => pm.IsActive)
-                .ToListAsync();
+            ViewData["TicketId"] = new SelectList(
+                await _context.Tickets
+                    .Include(t => t.Showtime)
+                    .ThenInclude(s => s.Movie)
+                    .Select(t => new { 
+                        t.Id, 
+                        DisplayText = $"{t.Showtime.Movie.Title} - {t.SeatNumber} - {t.BookingReference}"
+                    })
+                    .ToListAsync(), 
+                "Id", "DisplayText", payment.TicketId);
             
+            ViewData["PaymentMethodId"] = new SelectList(_context.PaymentMethods, "Id", "Name", payment.PaymentMethodId);
             return View(payment);
         }
 
-        // GET: Payments/Success/5
-        public async Task<IActionResult> Success(int? id)
+        // GET: Admin/Payments/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var payment = await _context.Payments.FindAsync(id);
+            if (payment == null)
+            {
+                return NotFound();
+            }
+
+            ViewData["TicketId"] = new SelectList(
+                await _context.Tickets
+                    .Include(t => t.Showtime)
+                    .ThenInclude(s => s.Movie)
+                    .Select(t => new { 
+                        t.Id, 
+                        DisplayText = $"{t.Showtime.Movie.Title} - {t.SeatNumber} - {t.BookingReference}"
+                    })
+                    .ToListAsync(), 
+                "Id", "DisplayText", payment.TicketId);
+            
+            ViewData["PaymentMethodId"] = new SelectList(_context.PaymentMethods, "Id", "Name", payment.PaymentMethodId);
+            return View(payment);
+        }
+
+        // POST: Admin/Payments/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,TicketId,PaymentMethodId,Amount,PaymentDate,Status,TransactionId,Notes")] Payment payment)
+        {
+            if (id != payment.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(payment);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!PaymentExists(payment.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewData["TicketId"] = new SelectList(
+                await _context.Tickets
+                    .Include(t => t.Showtime)
+                    .ThenInclude(s => s.Movie)
+                    .Select(t => new { 
+                        t.Id, 
+                        DisplayText = $"{t.Showtime.Movie.Title} - {t.SeatNumber} - {t.BookingReference}"
+                    })
+                    .ToListAsync(), 
+                "Id", "DisplayText", payment.TicketId);
+            
+            ViewData["PaymentMethodId"] = new SelectList(_context.PaymentMethods, "Id", "Name", payment.PaymentMethodId);
+            return View(payment);
+        }
+
+        // GET: Admin/Payments/Delete/5
+        public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
             {
@@ -124,9 +189,10 @@ namespace demo_duan.Controllers
 
             var payment = await _context.Payments
                 .Include(p => p.Ticket)
-                .ThenInclude(t => t.Movie)
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                    .ThenInclude(t => t.Showtime)
+                    .ThenInclude(s => s.Movie)
+                .Include(p => p.PaymentMethod)
+                .FirstOrDefaultAsync(p => p.Id == id);
 
             if (payment == null)
             {
@@ -136,9 +202,24 @@ namespace demo_duan.Controllers
             return View(payment);
         }
 
-        private string GenerateTransactionId()
+        // POST: Admin/Payments/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            return "TXN" + DateTime.Now.ToString("yyyyMMddHHmmss") + new Random().Next(1000, 9999);
+            var payment = await _context.Payments.FindAsync(id);
+            if (payment != null)
+            {
+                _context.Payments.Remove(payment);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool PaymentExists(int id)
+        {
+            return _context.Payments.Any(e => e.Id == id);
         }
     }
 }

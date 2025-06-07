@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace demo_duan.Models
 {
@@ -9,38 +10,28 @@ namespace demo_duan.Models
         [Required]
         public int TicketId { get; set; }
         
-        public string? UserId { get; set; }
+        [Required]
+        public int PaymentMethodId { get; set; }
         
         [Required]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
         
-        [StringLength(50)]
-        public string PaymentMethod { get; set; } = string.Empty; // Credit Card, Debit Card, Cash, etc.
-        
-        [StringLength(20)]
-        public string PaymentStatus { get; set; } = "Pending"; // Pending, Completed, Failed, Refunded
-        
-        [StringLength(100)]
-        public string TransactionId { get; set; } = string.Empty;
-        
-        [StringLength(50)]
-        public string PaymentGateway { get; set; } = string.Empty; // PayPal, Stripe, VNPay, etc.
-        
-        [StringLength(20)]
-        public string CardNumber { get; set; } = string.Empty; // Last 4 digits only
-        
-        [StringLength(100)]
-        public string CardHolderName { get; set; } = string.Empty;
-        
-        [StringLength(100)]
-        public string BankName { get; set; } = string.Empty;
-        
+        [Required]
         public DateTime PaymentDate { get; set; } = DateTime.Now;
         
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        [Required]
+        [StringLength(50)]
+        public string Status { get; set; } = "Pending"; // Pending, Completed, Failed, Refunded
+        
+        [StringLength(100)]
+        public string? TransactionId { get; set; }
+        
+        [StringLength(500)]
+        public string? Notes { get; set; }
         
         // Navigation properties
         public virtual Ticket Ticket { get; set; } = null!;
-        public virtual ApplicationUser? User { get; set; }
+        public virtual PaymentMethod PaymentMethod { get; set; } = null!;
     }
 }

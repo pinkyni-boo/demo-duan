@@ -7,19 +7,18 @@ namespace demo_duan.Models
         public int Id { get; set; }
         
         [Required]
-        [StringLength(50)]
-        public string Name { get; set; } = string.Empty; // Credit Card, Debit Card, PayPal, etc.
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty; // Credit Card, PayPal, Bank Transfer, etc.
         
-        [StringLength(200)]
-        public string Description { get; set; } = string.Empty;
+        [StringLength(500)]
+        public string? Description { get; set; }
         
         public bool IsActive { get; set; } = true;
         
-        public decimal ProcessingFee { get; set; } = 0; // Phí xử lý
+        [StringLength(50)]
+        public string? Icon { get; set; } // CSS class or image path
         
-        public string IconUrl { get; set; } = string.Empty; // URL icon của payment method
-        
-        // Navigation properties
+        // Navigation property
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }

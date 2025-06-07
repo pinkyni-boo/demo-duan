@@ -23,7 +23,7 @@ namespace demo_duan.Controllers
                 .ThenInclude(s => s.Movie)
                 .Include(t => t.Showtime)
                 .ThenInclude(s => s.Theater)
-                .OrderByDescending(t => t.CreatedAt)
+                .OrderByDescending(t => t.BookingDate)
                 .ToListAsync();
             return View(tickets);
         }
@@ -63,7 +63,7 @@ namespace demo_duan.Controllers
             }
 
             // Tạo danh sách ghế đã đặt
-            var bookedSeats = showtime.Tickets.Select(t => t.Seat).ToList();
+            var bookedSeats = showtime.Tickets.Select(t => t.SeatNumber).ToList();
             ViewBag.BookedSeats = bookedSeats;
 
             return View(showtime);
@@ -72,7 +72,7 @@ namespace demo_duan.Controllers
         // POST: Tickets/Book
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Book([Bind("ShowtimeId,UserName,Email,Phone,Seat,Quantity")] BookTicketViewModel model)
+        public async Task<IActionResult> Book([Bind("ShowtimeId,UserName,Email,Phone,SeatNumber,Quantity")] BookTicketViewModel model)
         {
             try
             {
@@ -93,18 +93,18 @@ namespace demo_duan.Controllers
                     if (showtime.AvailableSeats < model.Quantity)
                     {
                         ModelState.AddModelError("Quantity", "Not enough available seats.");
-                        ViewBag.BookedSeats = showtime.Tickets.Select(t => t.Seat).ToList();
+                        ViewBag.BookedSeats = showtime.Tickets.Select(t => t.SeatNumber).ToList();
                         return View(showtime);
                     }
 
                     // Kiểm tra ghế đã được đặt chưa
-                    var requestedSeats = model.Seat.Split(',').Select(s => s.Trim()).ToList();
-                    var bookedSeats = showtime.Tickets.Select(t => t.Seat).ToList();
+                    var requestedSeats = model.SeatNumber.Split(',').Select(s => s.Trim()).ToList();
+                    var bookedSeats = showtime.Tickets.Select(t => t.SeatNumber).ToList();
                     var conflictSeats = requestedSeats.Intersect(bookedSeats).ToList();
 
                     if (conflictSeats.Any())
                     {
-                        ModelState.AddModelError("Seat", $"Seats {string.Join(", ", conflictSeats)} are already booked.");
+                        ModelState.AddModelError("SeatNumber", $"Seats {string.Join(", ", conflictSeats)} are already booked.");
                         ViewBag.BookedSeats = bookedSeats;
                         return View(showtime);
                     }
@@ -116,17 +116,12 @@ namespace demo_duan.Controllers
                         var ticket = new Ticket
                         {
                             ShowtimeId = model.ShowtimeId,
-                            MovieId = showtime.MovieId,
-                            UserName = model.UserName,
-                            UserEmail = model.Email, // Thay đổi từ Email thành UserEmail
-                            Phone = model.Phone,
-                            Seat = seat,
+                            UserId = User.Identity?.Name ?? "Anonymous", // Sử dụng UserId thay vì UserName
+                            SeatNumber = seat, // Sử dụng SeatNumber thay vì Seat
                             Price = showtime.Movie.Price,
-                            TotalPrice = showtime.Movie.Price, // Thêm TotalPrice
-                            MovieTitle = showtime.Movie.Title, // Thêm MovieTitle
-                            CinemaName = showtime.Theater.Name, // Thêm CinemaName
-                            Status = "Confirmed",
-                            CreatedAt = DateTime.Now
+                            Status = "Booked", // Sử dụng status phù hợp
+                            BookingDate = DateTime.Now, // Sử dụng BookingDate thay vì CreatedAt
+                            BookingReference = $"BK{DateTime.Now:yyyyMMddHHmmss}{Random.Shared.Next(1000, 9999)}"
                         };
                         tickets.Add(ticket);
                     }
@@ -154,7 +149,7 @@ namespace demo_duan.Controllers
                 .Include(s => s.Tickets)
                 .FirstOrDefaultAsync(s => s.Id == model.ShowtimeId);
 
-            ViewBag.BookedSeats = showtimeReload?.Tickets.Select(t => t.Seat).ToList() ?? new List<string>();
+            ViewBag.BookedSeats = showtimeReload?.Tickets.Select(t => t.SeatNumber).ToList() ?? new List<string>();
             return View(showtimeReload);
         }
 

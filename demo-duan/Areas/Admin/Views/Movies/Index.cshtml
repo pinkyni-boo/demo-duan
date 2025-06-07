@@ -1,257 +1,262 @@
 ﻿@model IEnumerable<demo_duan.Models.Movie>
-
 @{
-    ViewData["Title"] = "Manage Movies";
+    ViewData["Title"] = "Movies Management";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="fas fa-film me-2"></i>Movies Management</h1>
-    <a asp-action="Create" class="btn btn-success">
-        <i class="fas fa-plus"></i> Add New Movie
+    <div>
+        <h1 class="h3 mb-1"><i class="fas fa-film me-2 text-primary"></i>Movies Management</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
+                <li class="breadcrumb-item active">Movies</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Create" class="btn btn-admin-success">
+        <i class="fas fa-plus me-1"></i>Add New Movie
     </a>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Total Movies</p>
+                        <h3 class="mb-0">@Model.Count()</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-film fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-}
-
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Đang chiếu</p>
+                        <h3 class="mb-0">@Model.Count(m => m.Status == "Active")</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-play fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-}
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Sắp chiếu</p>
+                        <h3 class="mb-0">@Model.Count(m => m.Status == "Coming Soon")</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="mb-1 text-white-50">Total Revenue</p>
+                        <h3 class="mb-0">$@Model.Sum(m => m.Price).ToString("N0")</h3>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Poster</th>
-                        <th>Title</th>
-                        <th>Category</th>
-                        <th>Duration</th>
-                        <th>Release Date</th>
-                        <th>Price</th>
-                        <th>Showtimes</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        @foreach (var item in Model)
+<!-- Movies Table -->
+<div class="card admin-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Movies</h5>
+        <div class="d-flex gap-2">
+            <div class="input-group" style="width: 300px;">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" id="searchInput" placeholder="Search movies...">
+            </div>
+            <select class="form-select" id="statusFilter" style="width: 150px;">
+                <option value="">All Status</option>
+                <option value="Now Showing">Now Showing</option>
+                <option value="Coming Soon">Coming Soon</option>
+                <option value="Ended">Ended</option>
+            </select>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover admin-table mb-0" id="moviesTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Poster</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Duration</th>
+                            <th>Release Date</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var movie in Model)
                         {
-                            var showtimes = item.Showtimes ?? new List<demo_duan.Models.Showtime>();
-                            var hasShowtimes = showtimes.Any();
-                            var isActive = hasShowtimes && showtimes.Any(s => s.Date >= DateTime.Today);
-                            
                             <tr>
                                 <td>
-                                    @if (!string.IsNullOrEmpty(item.Img))
+                                    <div class="poster-thumb">
+                                        @if (!string.IsNullOrEmpty(movie.Img))
+                                        {
+                                            <img src="@movie.Img" alt="@movie.Title" class="rounded" 
+                                                 style="width: 60px; height: 80px; object-fit: cover;">
+                                        }
+                                        else
+                                        {
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                                 style="width: 60px; height: 80px;">
+                                                <i class="fas fa-film text-muted"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <h6 class="mb-1">@movie.Title</h6>
+                                        <small class="text-muted">ID: @movie.Id</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">@(movie.Category?.Name ?? "Chưa phân loại")</span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">@movie.Duration min</span>
+                                </td>
+                                <td>
+                                    @movie.ReleaseDate.ToString("MMM dd, yyyy")
+                                </td>
+                                <td>
+                                    <strong class="text-success">$@movie.Price.ToString("N2")</strong>
+                                </td>
+                                <td>
+                                    @if (movie.ComputedStatus == "Đang chiếu")
                                     {
-                                        <img src="@item.Img" alt="@item.Title" style="width: 50px; height: 75px;" class="img-thumbnail">
+                                        <span class="badge bg-success"><i class="fas fa-play me-1"></i>Đang chiếu</span>
                                     }
                                     else
                                     {
-                                        <div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 75px;">
-                                            <i class="fas fa-film text-muted"></i>
-                                        </div>
-                                    }
-                                </td>
-                                <td>
-                                    <strong>@item.Title</strong>
-                                    <br>
-                                    <small class="text-muted">@(item.Description?.Length > 50 ? item.Description.Substring(0, 50) + "..." : item.Description)</small>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">@(item.Category?.Name ?? "No Category")</span>
-                                </td>
-                                <td>@item.Duration min</td>
-                                <td>@item.ReleaseDate.ToString("dd/MM/yyyy")</td>
-                                <td>
-                                    <strong class="text-success">$@item.Price</strong>
-                                </td>
-                                <td>
-                                    @if (hasShowtimes)
-                                    {
-                                        <span class="badge bg-primary">@showtimes.Count() shows</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">No shows</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (isActive)
-                                    {
-                                        <span class="badge bg-success">Active</span>
-                                    }
-                                    else if (item.ReleaseDate > DateTime.Today)
-                                    {
-                                        <span class="badge bg-warning">Coming Soon</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">Inactive</span>
+                                        <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>Sắp chiếu</span>
                                     }
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a asp-action="Details" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-info btn-sm" title="View Details">
+                                        <a asp-action="Details" asp-route-id="@movie.Id" 
+                                           class="btn btn-sm btn-outline-info" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a asp-action="Edit" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-warning btn-sm" title="Edit">
+                                        <a asp-action="Edit" asp-route-id="@movie.Id" 
+                                           class="btn btn-sm btn-outline-primary" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a asp-action="Delete" asp-route-id="@item.Id" 
-                                           class="btn btn-outline-danger btn-sm" title="Delete">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="deleteMovie(@movie.Id, '@movie.Title')" title="Delete">
                                             <i class="fas fa-trash"></i>
-                                        </a>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="9" class="text-center py-4">
-                                <div class="text-muted">
-                                    <i class="fas fa-film fa-3x mb-3"></i>
-                                    <p>No movies found.</p>
-                                    <a asp-action="Create" class="btn btn-primary">Create the first movie</a>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-film fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No movies found</h5>
+                <p class="text-muted mb-3">Get started by adding your first movie</p>
+                <a asp-action="Create" class="btn btn-admin-success">
+                    <i class="fas fa-plus me-1"></i>Create the first movie
+                </a>
+            </div>
+        }
     </div>
 </div>
 
-<div class="mt-4">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">@(Model?.Count() ?? 0)</h5>
-                    <p class="card-text">Total Movies</p>
-                </div>
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">@(Model?.Count(m => (m.Showtimes ?? new List<demo_duan.Models.Showtime>()).Any(s => s.Date >= DateTime.Today)) ?? 0)</h5>
-                    <p class="card-text">Now Showing</p>
-                </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the movie "<span id="movieTitle"></span>"?</p>
+                <p class="text-muted small">This action cannot be undone.</p>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">@(Model?.Count(m => m.ReleaseDate > DateTime.Today) ?? 0)</h5>
-                    <p class="card-text">Coming Soon</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">$@(Model?.Sum(m => m.Price * ((m.Tickets?.Count()) ?? 0)) ?? 0)</h5>
-                    <p class="card-text">Total Revenue</p>
-                </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Delete
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-.hero-section {
-    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/images/cinema-bg.jpg') center/cover;
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Search functionality
+            $('#searchInput').on('keyup', function() {
+                var value = $(this).val().toLowerCase();
+                filterTable();
+            });
+            
+            // Status filter
+            $('#statusFilter').on('change', function() {
+                filterTable();
+            });
+            
+            function filterTable() {
+                var searchValue = $('#searchInput').val().toLowerCase();
+                var statusValue = $('#statusFilter').val();
+                
+                $('#moviesTable tbody tr').filter(function() {
+                    var textMatch = $(this).text().toLowerCase().indexOf(searchValue) > -1;
+                    var statusMatch = statusValue === '' || $(this).find('.badge').text().indexOf(statusValue) > -1;
+                    
+                    $(this).toggle(textMatch && statusMatch);
+                });
+            }
+        });
+        
+        function deleteMovie(id, title) {
+            $('#movieTitle').text(title);
+            $('#deleteForm').attr('action', '/Admin/Movies/Delete/' + id);
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
 }
-
-.movie-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.movie-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.movie-poster {
-    height: 300px;
-    object-fit: cover;
-}
-
-.movie-poster-placeholder {
-    height: 300px;
-    background-color: #f8f9fa;
-}
-
-.movie-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.movie-card:hover .movie-overlay {
-    opacity: 1;
-}
-
-.movie-overlay-content {
-    text-align: center;
-}
-
-.movie-overlay-content .btn {
-    margin: 0 5px;
-}
-
-/* Responsive design */
-@ViewBag.Media (max-width: 768px) {
-    .hero-title {
-        font-size: 2.5rem;
-    }
-    
-    .hero-buttons .btn {
-        padding: 10px 20px;
-        margin-bottom: 10px;
-    }
-    
-    .movie-card {
-        margin-bottom: 20px;
-    }
-}
-
-@ViewBag.Media (max-width: 576px) {
-    .hero-title {
-        font-size: 2rem;
-    }
-    
-    .col-lg-3, .col-md-4, .col-sm-6 {
-        margin-bottom: 15px;
-    }
-}
-</style>

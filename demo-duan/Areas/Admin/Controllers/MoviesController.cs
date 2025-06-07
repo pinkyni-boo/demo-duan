@@ -51,25 +51,58 @@ namespace demo_duan.Areas.Admin.Controllers
         }
 
         // GET: Admin/Movies/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name");
-            return View();
+            try
+            {
+                // Load categories for dropdown
+                var categories = await _context.Categories.ToListAsync();
+                ViewData["CategoryId"] = new SelectList(categories, "Id", "Name");
+                
+                // Create new movie with default values
+                var movie = new Movie
+                {
+                    ReleaseDate = DateTime.Today,
+                    Status = "Sắp chiếu"
+                };
+                
+                return View(movie);
+            }
+            catch (Exception ex)
+            {
+                // Log error
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải trang tạo phim: " + ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: Admin/Movies/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Description,Duration,ReleaseDate,Img,Price,CategoryId")] Movie movie)
+        public async Task<IActionResult> Create([Bind("Title,Description,Duration,Img,Price,ReleaseDate,CategoryId")] Movie movie)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(movie);
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Movie created successfully!";
-                return RedirectToAction(nameof(Index));
+                if (ModelState.IsValid)
+                {
+                    // Set auto-generated properties
+                    movie.UpdateStatusBasedOnReleaseDate();
+                    
+                    _context.Add(movie);
+                    await _context.SaveChangesAsync();
+                    
+                    TempData["SuccessMessage"] = $"Phim '{movie.Title}' đã được tạo thành công!";
+                    return RedirectToAction(nameof(Index));
+                }
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", movie.CategoryId);
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tạo phim: " + ex.Message;
+            }
+
+            // Reload categories if validation fails
+            var categories = await _context.Categories.ToListAsync();
+            ViewData["CategoryId"] = new SelectList(categories, "Id", "Name", movie.CategoryId);
             return View(movie);
         }
 
@@ -93,7 +126,7 @@ namespace demo_duan.Areas.Admin.Controllers
         // POST: Admin/Movies/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Duration,ReleaseDate,Img,Price,CategoryId")] Movie movie)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Duration,Img,Price,ReleaseDate,CategoryId")] Movie movie)
         {
             if (id != movie.Id)
             {
@@ -104,9 +137,13 @@ namespace demo_duan.Areas.Admin.Controllers
             {
                 try
                 {
+                    // Tự động cập nhật Status dựa trên Release Date
+                    movie.UpdateStatusBasedOnReleaseDate();
+                    
                     _context.Update(movie);
                     await _context.SaveChangesAsync();
-                    TempData["Success"] = "Movie updated successfully!";
+                    
+                    TempData["SuccessMessage"] = $"Phim '{movie.Title}' đã được cập nhật với trạng thái: {movie.Status}";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -121,6 +158,7 @@ namespace demo_duan.Areas.Admin.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
+            
             ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", movie.CategoryId);
             return View(movie);
         }
