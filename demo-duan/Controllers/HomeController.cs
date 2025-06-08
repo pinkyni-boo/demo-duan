@@ -259,5 +259,11 @@ namespace demo_duan.Controllers
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier 
             });
         }
+
+        // Thêm action method
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
     }
 }

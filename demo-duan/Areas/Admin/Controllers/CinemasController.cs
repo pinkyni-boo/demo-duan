@@ -6,7 +6,7 @@ using demo_duan.Models;
 namespace demo_duan.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    public class CinemasController : Controller
+    public class CinemasController : BaseAdminController
     {
         private readonly ApplicationDbContext _context;
 

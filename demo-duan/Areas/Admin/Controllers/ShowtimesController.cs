@@ -7,7 +7,7 @@ using System.Globalization;
 namespace demo_duan.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    public class ShowtimesController : Controller
+    public class ShowtimesController : BaseAdminController
     {
         private readonly ApplicationDbContext _context;
 

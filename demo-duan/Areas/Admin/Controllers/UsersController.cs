@@ -1,17 +1,17 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using demo_duan.Areas.Admin.Controllers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using demo_duan.Areas.Identity.Data;
-using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 
 namespace demo_duan.Areas.Admin.Controllers
 {
-    [Area("Admin")]
     [Authorize(Roles = "Admin")]
-    public class UsersController : Controller
+    public class UsersController : BaseAdminController
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;

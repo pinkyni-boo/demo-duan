@@ -1,13 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using demo_duan.Data;
 using demo_duan.Models;
+using demo_duan.Areas.Admin.Controllers;
 
 namespace demo_duan.Areas.Admin.Controllers
 {
-    [Area("Admin")]
-    public class MoviesController : Controller
+    [Authorize(Roles = "Admin")]
+    public class MoviesController : BaseAdminController
     {
         private readonly ApplicationDbContext _context;
 
