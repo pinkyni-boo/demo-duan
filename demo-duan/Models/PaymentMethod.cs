@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace demo_duan.Models
 {
@@ -7,27 +8,25 @@ namespace demo_duan.Models
         public int Id { get; set; }
 
         [Required]
-        [Display(Name = "Tên phương thức")]
         [StringLength(100)]
-        public string Name { get; set; } = null!;
+        public string Name { get; set; } = string.Empty;
 
-        [Display(Name = "Mô tả")]
-        [StringLength(500)]
+        [StringLength(255)]
         public string? Description { get; set; }
 
-        [Display(Name = "Icon/Logo")]
         [StringLength(255)]
         public string? Icon { get; set; }
 
-        [Display(Name = "Trạng thái")]
         public bool IsActive { get; set; } = true;
 
-        [Display(Name = "Phí giao dịch (%)")]
-        [Range(0, 100)]
+        [Column(TypeName = "decimal(5,2)")]
         public decimal TransactionFee { get; set; } = 0;
 
-        [Display(Name = "Thứ tự hiển thị")]
         public int DisplayOrder { get; set; } = 0;
+
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
+
+        public DateTime? UpdatedDate { get; set; }
 
         // Navigation Properties
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

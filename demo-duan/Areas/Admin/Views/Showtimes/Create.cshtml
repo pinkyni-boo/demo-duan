@@ -4,6 +4,82 @@
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
+<!-- Thêm style trực tiếp thay vì đặt trong section -->
+<style>
+    .required::after {
+        content: " *";
+        color: red;
+    }
+    
+    .form-select:focus,
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .admin-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px 10px 0 0 !important;
+    }
+    
+    .btn-admin-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        transition: transform 0.3s ease;
+    }
+    
+    .btn-admin-success:hover {
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .is-invalid {
+        border-color: #dc3545;
+    }
+    
+    .alert-notification {
+        animation: slideInRight 0.3s ease-out;
+    }
+    
+    /* Keyframes phải được đặt trong CSS, không phải Razor */
+    @@keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    .loading-spinner {
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3 mb-1"><i class="fas fa-calendar-plus me-2 text-primary"></i>Tạo Suất chiếu mới</h1>
@@ -199,83 +275,6 @@
         </div>
     </div>
 </div>
-
-@section Styles {
-    <style>
-        .required::after {
-            content: " *";
-            color: red;
-        }
-        
-        .form-select:focus,
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .admin-card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-        }
-        
-        .btn-admin-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            transition: transform 0.3s ease;
-        }
-        
-        .btn-admin-success:hover {
-            transform: translateY(-2px);
-            color: white;
-        }
-        
-        .is-invalid {
-            border-color: #dc3545;
-        }
-        
-        .alert-notification {
-            animation: slideInRight 0.3s ease-out;
-        }
-        
-        /* Keyframes phải được đặt trong CSS, không phải Razor */
-        @@keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        .loading-spinner {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #3498db;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-right: 5px;
-        }
-        
-        @@keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-}
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using demo_duan.Models;
 using demo_duan.Areas.Identity.Data;
 
-namespace demo_duan.Data
+namespace demo_duan.Models
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
@@ -20,6 +19,8 @@ namespace demo_duan.Data
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<PaymentMethod> PaymentMethods { get; set; }
+        public DbSet<Invoice> Invoices { get; set; }
+        public DbSet<InvoiceItem> InvoiceItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -76,7 +77,47 @@ namespace demo_duan.Data
                 entity.HasIndex(p => p.TransactionId);
             });
 
-            // Relationships
+            // Invoice configuration
+            modelBuilder.Entity<Invoice>(entity =>
+            {
+                entity.Property(i => i.TotalAmount)
+                    .HasColumnType("decimal(18,2)");
+
+                entity.Property(i => i.TaxAmount)
+                    .HasColumnType("decimal(18,2)");
+
+                entity.Property(i => i.SubTotal)
+                    .HasColumnType("decimal(18,2)");
+
+                entity.HasIndex(i => i.InvoiceNumber)
+                    .IsUnique();
+
+                entity.HasIndex(i => i.IssueDate);
+            });
+
+            // InvoiceItem configuration
+            modelBuilder.Entity<InvoiceItem>(entity =>
+            {
+                entity.Property(ii => ii.UnitPrice)
+                    .HasColumnType("decimal(18,2)");
+
+                entity.Property(ii => ii.TotalPrice)
+                    .HasColumnType("decimal(18,2)");
+            });
+
+            // Ticket configuration - Fixed to use Price instead of TotalPrice
+            modelBuilder.Entity<Ticket>(entity =>
+            {
+                entity.Property(t => t.Price)
+                    .HasColumnType("decimal(18,2)");
+
+                entity.HasIndex(t => t.TicketCode)
+                    .IsUnique();
+
+                entity.HasIndex(t => t.BookingDate);
+            });
+
+            // Configure relationships
             ConfigureRelationships(modelBuilder);
         }
 
@@ -131,24 +172,47 @@ namespace demo_duan.Data
                 .HasForeignKey(t => t.MovieId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Payment relationships
+            // User -> Payment
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.User)
+                .WithMany(u => u.Payments)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Ticket -> Payment
             modelBuilder.Entity<Payment>()
                 .HasOne(p => p.Ticket)
                 .WithMany(t => t.Payments)
                 .HasForeignKey(p => p.TicketId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // PaymentMethod -> Payment
             modelBuilder.Entity<Payment>()
                 .HasOne(p => p.PaymentMethod)
                 .WithMany(pm => pm.Payments)
                 .HasForeignKey(p => p.PaymentMethodId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Payment>()
-                .HasOne(p => p.User)
-                .WithMany(u => u.Payments)
-                .HasForeignKey(p => p.UserId)
+            // User -> Invoice
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.User)
+                .WithMany()
+                .HasForeignKey(i => i.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Ticket -> Invoice
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Ticket)
+                .WithMany(t => t.Invoices)
+                .HasForeignKey(i => i.TicketId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Invoice -> InvoiceItem
+            modelBuilder.Entity<InvoiceItem>()
+                .HasOne(ii => ii.Invoice)
+                .WithMany(i => i.InvoiceItems)
+                .HasForeignKey(ii => ii.InvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

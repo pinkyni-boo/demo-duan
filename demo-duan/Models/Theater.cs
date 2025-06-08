@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 
 namespace demo_duan.Models
@@ -7,41 +8,58 @@ namespace demo_duan.Models
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Tên rạp là bắt buộc")]
-        [Display(Name = "Tên rạp")]
+        [Required]
         [StringLength(100)]
-        public string Name { get; set; } = null!;
+        [Display(Name = "Tên rạp")]
+        public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Địa chỉ là bắt buộc")]
+        [Required]
+        [StringLength(255)]
         [Display(Name = "Địa chỉ")]
-        [StringLength(200)]
-        public string Address { get; set; } = null!;
+        public string Address { get; set; } = string.Empty;
 
-        [Display(Name = "Số điện thoại")]
         [StringLength(20)]
+        [Display(Name = "Số điện thoại")]
         public string? Phone { get; set; }
 
-        [Display(Name = "Email")]
-        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
         [StringLength(100)]
+        [EmailAddress]
+        [Display(Name = "Email")]
         public string? Email { get; set; }
 
+        [Required]
+        [StringLength(100)]
         [Display(Name = "Thành phố")]
-        [StringLength(50)]
-        public string? City { get; set; }
+        public string City { get; set; } = string.Empty;
 
+        [StringLength(255)]
         [Display(Name = "Mô tả")]
-        [StringLength(500)]
         public string? Description { get; set; }
 
-        [Display(Name = "Tổng số ghế")]
-        public int TotalCapacity { get; set; } = 0; // Thêm setter
+        [StringLength(255)]
+        [Display(Name = "Hình ảnh")]
+        public string? Image { get; set; }
 
-        [Display(Name = "Trạng thái")]
+        [Display(Name = "Hoạt động")]
         public bool IsActive { get; set; } = true;
+
+        [Display(Name = "Ngày tạo")]
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
+
+        [Display(Name = "Ngày cập nhật")]
+        public DateTime? UpdatedDate { get; set; }
 
         // Navigation properties
         public virtual ICollection<Cinema> Cinemas { get; set; } = new List<Cinema>();
-        public virtual ICollection<Showtime> Showtimes { get; set; } = new List<Showtime>();
+
+        // Thêm computed property cho Showtimes
+        [NotMapped]
+        public virtual ICollection<Showtime> Showtimes => 
+            Cinemas?.SelectMany(c => c.Showtimes).ToList() ?? new List<Showtime>();
+
+        // Thêm mutable TotalCapacity để CinemasController có thể update
+        [NotMapped]
+        [Display(Name = "Tổng số ghế")]
+        public int TotalCapacity { get; set; }
     }
 }

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using demo_duan.Data;
 using demo_duan.Models;
 
 namespace demo_duan.Areas.Admin.Controllers
@@ -19,7 +18,7 @@ namespace demo_duan.Areas.Admin.Controllers
         public async Task<IActionResult> Index()
         {
             var theaters = await _context.Theaters
-                .Include(t => t.Showtimes)
+                .Include(t => t.Cinemas) // Changed from Showtimes to Cinemas
                 .ToListAsync();
             return View(theaters);
         }
@@ -30,8 +29,9 @@ namespace demo_duan.Areas.Admin.Controllers
             if (id == null) return NotFound();
 
             var theater = await _context.Theaters
-                .Include(t => t.Showtimes)
-                    .ThenInclude(s => s.Movie)
+                .Include(t => t.Cinemas) // Changed from Showtimes
+                    .ThenInclude(c => c.Showtimes)
+                        .ThenInclude(s => s.Movie)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (theater == null) return NotFound();
@@ -48,7 +48,7 @@ namespace demo_duan.Areas.Admin.Controllers
         // POST: Admin/Theaters/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Capacity,Location,Address,PhoneNumber,Email")] Theater theater)
+        public async Task<IActionResult> Create([Bind("Name,Address,City,Phone,Email")] Theater theater) // Updated properties
         {
             if (ModelState.IsValid)
             {
@@ -74,7 +74,7 @@ namespace demo_duan.Areas.Admin.Controllers
         // POST: Admin/Theaters/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Capacity,Location,Address,PhoneNumber,Email")] Theater theater)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Address,City,Phone,Email,IsActive")] Theater theater) // Updated properties
         {
             if (id != theater.Id) return NotFound();
 
@@ -104,7 +104,7 @@ namespace demo_duan.Areas.Admin.Controllers
             if (id == null) return NotFound();
 
             var theater = await _context.Theaters
-                .Include(t => t.Showtimes)
+                .Include(t => t.Cinemas) // Changed from Showtimes to Cinemas
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (theater == null) return NotFound();

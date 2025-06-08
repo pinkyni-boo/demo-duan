@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using demo_duan.Data;
 using demo_duan.Models;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
@@ -62,8 +61,9 @@ namespace demo_duan.Controllers
 
             var moviesQuery = _context.Movies
                 .Include(m => m.Category)
-                .Include(m => m.Showtimes.Where(s => s.Date >= DateTime.Today))
-                .ThenInclude(s => s.Theater)
+                .Include(m => m.Showtimes.Where(s => s.ShowDate >= DateTime.Today)) // Sửa s.Date thành s.ShowDate
+                .ThenInclude(s => s.Cinema)
+                .ThenInclude(c => c.Theater)
                 .AsQueryable();
 
             // Lọc theo category
@@ -96,9 +96,10 @@ namespace demo_duan.Controllers
 
             var moviesQuery = _context.Movies
                 .Include(m => m.Category)
-                .Include(m => m.Showtimes.Where(s => s.Date >= DateTime.Today))
-                .ThenInclude(s => s.Theater)
-                .Where(m => m.Showtimes.Any(s => s.Date >= DateTime.Today))
+                .Include(m => m.Showtimes.Where(s => s.ShowDate >= DateTime.Today)) // Sửa s.Date thành s.ShowDate
+                .ThenInclude(s => s.Cinema)
+                .ThenInclude(c => c.Theater)
+                .Where(m => m.Showtimes.Any(s => s.ShowDate >= DateTime.Today)) // Sửa s.Date thành s.ShowDate
                 .AsQueryable();
 
             if (categoryId.HasValue && categoryId > 0)
@@ -124,9 +125,10 @@ namespace demo_duan.Controllers
             var moviesQuery = _context.Movies
                 .Include(m => m.Category)
                 .Include(m => m.Showtimes)
-                .ThenInclude(s => s.Theater)
+                .ThenInclude(s => s.Cinema)
+                .ThenInclude(c => c.Theater)
                 .Where(m => m.ReleaseDate > DateTime.Today || 
-                           !m.Showtimes.Any(s => s.Date >= DateTime.Today))
+                           !m.Showtimes.Any(s => s.ShowDate >= DateTime.Today)) // Sửa s.Date thành s.ShowDate
                 .AsQueryable();
 
             if (categoryId.HasValue && categoryId > 0)
@@ -152,8 +154,9 @@ namespace demo_duan.Controllers
 
             var movie = await _context.Movies
                 .Include(m => m.Category)
-                .Include(m => m.Showtimes.Where(s => s.Date >= DateTime.Today))
-                .ThenInclude(s => s.Theater)
+                .Include(m => m.Showtimes.Where(s => s.ShowDate >= DateTime.Today)) // Sửa s.Date thành s.ShowDate
+                .ThenInclude(s => s.Cinema)
+                .ThenInclude(c => c.Theater)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (movie == null)
@@ -173,16 +176,25 @@ namespace demo_duan.Controllers
                 return NotFound();
             }
 
+            // Cần tách thành 2 bước vì AvailableSeats là computed property
             var movie = await _context.Movies
                 .Include(m => m.Category)
-                .Include(m => m.Showtimes.Where(s => s.Date >= DateTime.Today && s.AvailableSeats > 0))
-                .ThenInclude(s => s.Theater)
+                .Include(m => m.Showtimes.Where(s => s.ShowDate >= DateTime.Today)) // Chỉ lọc theo ShowDate
+                .ThenInclude(s => s.Cinema)
+                .ThenInclude(c => c.Theater)
+                .Include(m => m.Showtimes.Where(s => s.ShowDate >= DateTime.Today)) // Cần include lại Showtimes để load Tickets
+                .ThenInclude(s => s.Tickets)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (movie == null)
             {
                 return NotFound();
             }
+
+            // Lọc các suất chiếu có ghế trống trong bộ nhớ
+            var availableShowtimes = movie.Showtimes.Where(s => s.AvailableSeats > 0).ToList();
+            // Gán lại danh sách showtimes đã lọc
+            movie.Showtimes = availableShowtimes;
 
             if (!movie.Showtimes.Any())
             {
@@ -205,7 +217,8 @@ namespace demo_duan.Controllers
             var showtime = await _context.Showtimes
                 .Include(s => s.Movie)
                 .ThenInclude(m => m.Category)
-                .Include(s => s.Theater)
+                .Include(s => s.Cinema)
+                .ThenInclude(c => c.Theater) // Sửa lại cách include Theater
                 .Include(s => s.Tickets)
                 .FirstOrDefaultAsync(s => s.Id == showtimeId);
 
@@ -214,7 +227,7 @@ namespace demo_duan.Controllers
                 return NotFound();
             }
 
-            var showtimeDateTime = showtime.Date.Date.Add(showtime.Time);
+            var showtimeDateTime = showtime.ShowDate.Date.Add(showtime.ShowTime); // Sửa Date thành ShowDate
             if (showtimeDateTime < DateTime.Now)
             {
                 TempData["Error"] = "Cannot book tickets for past showtimes.";

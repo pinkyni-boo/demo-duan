@@ -37,40 +37,46 @@ namespace demo_duan.Areas.Identity.Pages.Account
         }
 
         [BindProperty]
-        public InputModel Input { get; set; }
+        public InputModel Input { get; set; } = new();
 
-        public string ReturnUrl { get; set; }
+        public string ReturnUrl { get; set; } = string.Empty;
 
-        public IList<AuthenticationScheme> ExternalLogins { get; set; }
+        public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
         public class InputModel
         {
-            [Required(ErrorMessage = "Email là bắt buộc")]
-            [EmailAddress(ErrorMessage = "Email không hợp lệ")]
-            [Display(Name = "Email")]
-            public string Email { get; set; }
+            [Required(ErrorMessage = "Vui lòng nhập họ")]
+            [Display(Name = "Họ")]
+            [StringLength(100, ErrorMessage = "Họ không được vượt quá 100 ký tự")]
+            public string FirstName { get; set; } = string.Empty;
 
-            [Required(ErrorMessage = "Họ và tên là bắt buộc")]
-            [StringLength(100, ErrorMessage = "Họ và tên không được quá 100 ký tự")]
+            [Required(ErrorMessage = "Vui lòng nhập tên")]
+            [Display(Name = "Tên")]
+            [StringLength(100, ErrorMessage = "Tên không được vượt quá 100 ký tự")]
+            public string LastName { get; set; } = string.Empty;
+
             [Display(Name = "Họ và tên")]
-            public string FullName { get; set; }
+            [StringLength(200)]
+            public string FullName { get; set; } = string.Empty;
 
-            [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
-            [Display(Name = "Số điện thoại")]
-            public string PhoneNumber { get; set; }
+            [Required(ErrorMessage = "Vui lòng nhập email")]
+            [EmailAddress(ErrorMessage = "Email không đúng định dạng")]
+            [Display(Name = "Email")]
+            public string Email { get; set; } = string.Empty;
 
             [Display(Name = "Ngày sinh")]
             [DataType(DataType.Date)]
             public DateTime? DateOfBirth { get; set; }
 
             [Display(Name = "Giới tính")]
+            [StringLength(10)]
             public string Gender { get; set; }
 
             [Display(Name = "Địa chỉ")]
-            [StringLength(500, ErrorMessage = "Địa chỉ không được quá 500 ký tự")]
+            [StringLength(500)]
             public string Address { get; set; }
 
-            [Required(ErrorMessage = "Mật khẩu là bắt buộc")]
+            [Required(ErrorMessage = "Vui lòng nhập mật khẩu")]
             [StringLength(100, ErrorMessage = "Mật khẩu phải có ít nhất {2} ký tự và tối đa {1} ký tự.", MinimumLength = 6)]
             [DataType(DataType.Password)]
             [Display(Name = "Mật khẩu")]
@@ -80,29 +86,39 @@ namespace demo_duan.Areas.Identity.Pages.Account
             [Display(Name = "Xác nhận mật khẩu")]
             [Compare("Password", ErrorMessage = "Mật khẩu và xác nhận mật khẩu không khớp.")]
             public string ConfirmPassword { get; set; }
-
-            [Display(Name = "Tôi đồng ý với điều khoản sử dụng")]
-            [Range(typeof(bool), "true", "true", ErrorMessage = "Bạn phải đồng ý với điều khoản sử dụng")]
-            public bool AgreeToTerms { get; set; }
+            public string? PhoneNumber { get; internal set; }
         }
 
-        public async Task OnGetAsync(string returnUrl = null)
+        public async Task OnGetAsync(string? returnUrl = null)
         {
-            ReturnUrl = returnUrl;
+            ReturnUrl = returnUrl ?? string.Empty;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         }
 
-        public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+        public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             if (ModelState.IsValid)
             {
+                // Kiểm tra email đã tồn tại chưa
+                var existingUser = await _userManager.FindByEmailAsync(Input.Email);
+                if (existingUser != null)
+                {
+                    ModelState.AddModelError("Input.Email", "Email này đã được sử dụng");
+                    return Page();
+                }
+
+                // Tự động tạo FullName từ FirstName và LastName
+                Input.FullName = $"{Input.FirstName} {Input.LastName}".Trim();
+
                 var user = CreateUser();
 
+                // Set user properties
                 user.FullName = Input.FullName;
-                user.PhoneNumber = Input.PhoneNumber;
+                user.FirstName = Input.FirstName;
+                user.LastName = Input.LastName;
                 user.DateOfBirth = Input.DateOfBirth;
                 user.Gender = Input.Gender;
                 user.Address = Input.Address;
@@ -131,10 +147,6 @@ namespace demo_duan.Areas.Identity.Pages.Account
                         values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
                         protocol: Request.Scheme);
 
-                    // For demo purposes, auto-confirm email
-                    user.EmailConfirmed = true;
-                    await _userManager.UpdateAsync(user);
-
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
                         return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
@@ -152,6 +164,7 @@ namespace demo_duan.Areas.Identity.Pages.Account
                 }
             }
 
+            // If we got this far, something failed, redisplay form
             return Page();
         }
 

@@ -1,6 +1,8 @@
-
 using Microsoft.AspNetCore.Identity;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using demo_duan.Models;
 
 namespace demo_duan.Areas.Identity.Data
 {
@@ -22,6 +24,13 @@ namespace demo_duan.Areas.Identity.Data
         [Display(Name = "Địa chỉ")]
         [StringLength(500)]
         public string? Address { get; set; }
+    [PersonalData]
+        [StringLength(100)]
+        public string? FirstName { get; set; }
+
+        [PersonalData]
+        [StringLength(100)]
+        public string? LastName { get; set; }
 
         [Display(Name = "Ảnh đại diện")]
         [StringLength(255)]
@@ -40,7 +49,7 @@ namespace demo_duan.Areas.Identity.Data
         [StringLength(1000)]
         public string? Notes { get; set; }
 
-        // Navigation Properties
+        // Navigation Properties - Fixed namespace references
         public virtual ICollection<demo_duan.Models.Ticket> Tickets { get; set; } = new List<demo_duan.Models.Ticket>();
         public virtual ICollection<demo_duan.Models.Payment> Payments { get; set; } = new List<demo_duan.Models.Payment>();
     }

@@ -1,4 +1,6 @@
 ﻿@model IEnumerable<demo_duan.Models.Movie>
+@using demo_duan.Areas.Identity.Data
+@inject UserManager<ApplicationUser> UserManager
 @{
     ViewData["Title"] = "Quản lý Phim";
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";

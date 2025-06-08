@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using demo_duan.Data;
 using demo_duan.Models;
+using demo_duan.Areas.Identity.Data;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
@@ -10,9 +10,9 @@ namespace demo_duan.Controllers
     public class TicketsController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager; // Fixed: Changed from IdentityUser to ApplicationUser
 
-        public TicketsController(ApplicationDbContext context, UserManager<IdentityUser> userManager)
+        public TicketsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
@@ -24,16 +24,15 @@ namespace demo_duan.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return RedirectToAction("Login", "Account");
+                return RedirectToAction("Login", "Account", new { area = "Identity" });
             }
 
             var tickets = await _context.Tickets
                 .Include(t => t.Showtime)
                     .ThenInclude(s => s.Movie)
                 .Include(t => t.Showtime)
-                    .ThenInclude(s => s.Theater)
-                .Include(t => t.Showtime)
                     .ThenInclude(s => s.Cinema)
+                    .ThenInclude(c => c.Theater)
                 .Where(t => t.UserId == userId)
                 .OrderByDescending(t => t.BookingDate)
                 .ToListAsync();
@@ -48,8 +47,8 @@ namespace demo_duan.Controllers
 
             var showtime = await _context.Showtimes
                 .Include(s => s.Movie)
-                .Include(s => s.Theater)
                 .Include(s => s.Cinema)
+                    .ThenInclude(c => c.Theater)
                 .Include(s => s.Tickets)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
@@ -65,14 +64,14 @@ namespace demo_duan.Controllers
         // POST: Tickets/Book
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Book(int showtimeId, List<int> selectedSeats)
+        public async Task<IActionResult> Book(int showtimeId, List<string> selectedSeats) // Changed to string for seat numbers
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return RedirectToAction("Login", "Account");
+                    return RedirectToAction("Login", "Account", new { area = "Identity" });
                 }
 
                 if (selectedSeats == null || !selectedSeats.Any())
@@ -103,13 +102,6 @@ namespace demo_duan.Controllers
                     return RedirectToAction(nameof(Book), new { id = showtimeId });
                 }
 
-                // Check seat availability
-                if (selectedSeats.Count > showtime.AvailableSeats)
-                {
-                    TempData["ErrorMessage"] = "Không đủ ghế trống.";
-                    return RedirectToAction(nameof(Book), new { id = showtimeId });
-                }
-
                 // Create tickets
                 var tickets = new List<Ticket>();
                 foreach (var seat in selectedSeats)
@@ -117,9 +109,10 @@ namespace demo_duan.Controllers
                     var ticket = new Ticket
                     {
                         ShowtimeId = showtimeId,
+                        MovieId = showtime.MovieId, // Fixed: Added MovieId
                         UserId = userId,
                         SeatNumber = seat,
-                        TotalPrice = showtime.Price,
+                        Price = showtime.Movie.Price, // Fixed: Use Price instead of TotalPrice
                         BookingDate = DateTime.Now,
                         Status = "Booked",
                         TicketCode = GenerateTicketCode()
@@ -128,11 +121,6 @@ namespace demo_duan.Controllers
                 }
 
                 _context.Tickets.AddRange(tickets);
-
-                // Update available seats
-                showtime.AvailableSeats -= selectedSeats.Count;
-                _context.Update(showtime);
-
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = $"Đặt vé thành công cho {selectedSeats.Count} ghế!";
@@ -154,9 +142,8 @@ namespace demo_duan.Controllers
                 .Include(t => t.Showtime)
                     .ThenInclude(s => s.Movie)
                 .Include(t => t.Showtime)
-                    .ThenInclude(s => s.Theater)
-                .Include(t => t.Showtime)
                     .ThenInclude(s => s.Cinema)
+                    .ThenInclude(c => c.Theater)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (ticket == null) return NotFound();
@@ -196,7 +183,7 @@ namespace demo_duan.Controllers
                 }
 
                 // Check if showtime has already started
-                var showtimeStart = ticket.Showtime.Date.Add(ticket.Showtime.Time);
+                var showtimeStart = ticket.Showtime.ShowDate.Add(ticket.Showtime.ShowTime);
                 if (showtimeStart <= DateTime.Now.AddHours(2)) // Must cancel at least 2 hours before
                 {
                     TempData["ErrorMessage"] = "Không thể hủy vé. Suất chiếu bắt đầu trong vòng 2 giờ.";
@@ -206,10 +193,6 @@ namespace demo_duan.Controllers
                 // Update ticket status
                 ticket.Status = "Cancelled";
                 _context.Update(ticket);
-
-                // Update available seats
-                ticket.Showtime.AvailableSeats += 1;
-                _context.Update(ticket.Showtime);
 
                 await _context.SaveChangesAsync();
 

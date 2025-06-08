@@ -1,17 +1,24 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using demo_duan.Models.ViewModels;
+using demo_duan.Areas.Identity.Data;
+using Microsoft.AspNetCore.Authorization;
+using System.Linq;
+using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 
 namespace demo_duan.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "Admin")]
     public class UsersController : Controller
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
-        public UsersController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
+        public UsersController(
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -21,101 +28,203 @@ namespace demo_duan.Areas.Admin.Controllers
         public async Task<IActionResult> Index()
         {
             var users = await _userManager.Users.ToListAsync();
-            var userRoles = new Dictionary<string, IList<string>>();
+            var userViewModels = new List<UserViewModel>();
 
             foreach (var user in users)
             {
-                userRoles[user.Id] = await _userManager.GetRolesAsync(user);
+                var roles = await _userManager.GetRolesAsync(user);
+                
+                userViewModels.Add(new UserViewModel
+                {
+                    Id = user.Id,
+                    UserName = user.UserName ?? string.Empty,
+                    Email = user.Email ?? string.Empty,
+                    FirstName = user.FirstName ?? string.Empty,
+                    LastName = user.LastName ?? string.Empty,
+                    FullName = user.FullName ?? string.Empty,
+                    PhoneNumber = user.PhoneNumber ?? string.Empty,
+                    Roles = string.Join(", ", roles),
+                    CreatedDate = user.CreatedDate,
+                    IsActive = user.IsActive
+                });
             }
 
-            ViewBag.UserRoles = userRoles;
-            return View(users);
+            return View(userViewModels);
         }
 
-        // GET: Admin/Users/Details/5
-        public async Task<IActionResult> Details(string id)
+        // GET: Admin/Users/Create
+        public async Task<IActionResult> Create()
         {
-            if (id == null) return NotFound();
-
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-
-            var roles = await _userManager.GetRolesAsync(user);
-            ViewBag.Roles = roles;
-
-            return View(user);
+            ViewBag.Roles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+            return View();
         }
 
-        // GET: Admin/Users/ManageRoles/5
-        public async Task<IActionResult> ManageRoles(string id)
-        {
-            if (id == null) return NotFound();
-
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-
-            var userRoles = await _userManager.GetRolesAsync(user);
-            var allRoles = await _roleManager.Roles.ToListAsync();
-
-            var model = new UserRoleViewModel
-            {
-                UserId = user.Id,
-                UserName = user.UserName ?? string.Empty,
-                Email = user.Email ?? string.Empty,
-                UserRoles = userRoles,
-                AllRoles = allRoles.Select(r => r.Name ?? string.Empty)
-                                  .Where(name => !string.IsNullOrEmpty(name))
-                                  .ToList()
-            };
-
-            return View(model);
-        }
-
-        // POST: Admin/Users/ManageRoles
+        // POST: Admin/Users/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ManageRoles(string userId, List<string> roles)
+        public async Task<IActionResult> Create(CreateUserViewModel model)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return NotFound();
-
-            var userRoles = await _userManager.GetRolesAsync(user);
-
-            // Remove user from all current roles
-            var removeResult = await _userManager.RemoveFromRolesAsync(user, userRoles);
-            if (!removeResult.Succeeded)
+            if (ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Lỗi khi xóa vai trò cũ!";
-                return RedirectToAction(nameof(ManageRoles), new { id = userId });
-            }
-
-            // Add user to selected roles
-            if (roles != null && roles.Count > 0)
-            {
-                var addResult = await _userManager.AddToRolesAsync(user, roles);
-                if (!addResult.Succeeded)
+                // Kiểm tra email đã tồn tại
+                var existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
                 {
-                    TempData["ErrorMessage"] = "Lỗi khi thêm vai trò mới!";
-                    return RedirectToAction(nameof(ManageRoles), new { id = userId });
+                    ModelState.AddModelError("Email", "Email này đã được sử dụng");
+                    ViewBag.Roles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+                    return View(model);
+                }
+
+                // Tạo FullName từ FirstName và LastName
+                var fullName = $"{model.FirstName} {model.LastName}".Trim();
+
+                var user = new ApplicationUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    FullName = fullName,
+                    PhoneNumber = model.PhoneNumber,
+                    CreatedDate = DateTime.Now,
+                    IsActive = true
+                };
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    // Gán role cho user
+                    if (!string.IsNullOrEmpty(model.Role))
+                    {
+                        await _userManager.AddToRoleAsync(user, model.Role);
+                    }
+                    else
+                    {
+                        await _userManager.AddToRoleAsync(user, "User");
+                    }
+
+                    TempData["SuccessMessage"] = "Người dùng đã được tạo thành công.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
                 }
             }
 
-            TempData["SuccessMessage"] = $"Đã cập nhật vai trò cho user {user.UserName}!";
-            return RedirectToAction(nameof(Index));
+            ViewBag.Roles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+            return View(model);
+        }
+
+        // GET: Admin/Users/Edit/5
+        public async Task<IActionResult> Edit(string id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var userRole = roles.FirstOrDefault();
+
+            var model = new EditUserViewModel
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName ?? string.Empty,
+                LastName = user.LastName ?? string.Empty,
+                PhoneNumber = user.PhoneNumber,
+                Role = userRole,
+                IsActive = user.IsActive
+            };
+
+            ViewBag.Roles = await _roleManager.Roles.ToListAsync();
+            return View(model);
+        }
+
+        // POST: Admin/Users/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(string id, EditUserViewModel model)
+        {
+            if (id != model.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null)
+                {
+                    return NotFound();
+                }
+
+                user.Email = model.Email;
+                user.UserName = model.Email;
+                user.FirstName = model.FirstName;
+                user.LastName = model.LastName;
+                user.PhoneNumber = model.PhoneNumber;
+                user.IsActive = model.IsActive;
+
+                var result = await _userManager.UpdateAsync(user);
+                if (!result.Succeeded)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                    ViewBag.Roles = await _roleManager.Roles.ToListAsync();
+                    return View(model);
+                }
+
+                // Cập nhật role
+                var roles = await _userManager.GetRolesAsync(user);
+                await _userManager.RemoveFromRolesAsync(user, roles);
+                await _userManager.AddToRoleAsync(user, model.Role);
+
+                TempData["SuccessMessage"] = "Người dùng đã được cập nhật thành công.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.Roles = await _roleManager.Roles.ToListAsync();
+            return View(model);
         }
 
         // GET: Admin/Users/Delete/5
         public async Task<IActionResult> Delete(string id)
         {
-            if (id == null) return NotFound();
+            if (id == null)
+            {
+                return NotFound();
+            }
 
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
+            if (user == null)
+            {
+                return NotFound();
+            }
 
             var roles = await _userManager.GetRolesAsync(user);
-            ViewBag.Roles = roles;
+            var viewModel = new UserViewModel
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Roles = string.Join(", ", roles),
+                CreatedDate = user.CreatedDate,
+                IsActive = user.IsActive
+            };
 
-            return View(user);
+            return View(viewModel);
         }
 
         // POST: Admin/Users/Delete/5
@@ -126,17 +235,189 @@ namespace demo_duan.Areas.Admin.Controllers
             var user = await _userManager.FindByIdAsync(id);
             if (user != null)
             {
+                // Kiểm tra xem người dùng có phải là admin duy nhất không
+                if (await _userManager.IsInRoleAsync(user, "Admin"))
+                {
+                    var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+                    if (adminUsers.Count <= 1)
+                    {
+                        TempData["ErrorMessage"] = "Không thể xóa admin duy nhất của hệ thống.";
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
+
                 var result = await _userManager.DeleteAsync(user);
                 if (result.Succeeded)
                 {
-                    TempData["SuccessMessage"] = $"User {user.UserName} đã được xóa!";
+                    TempData["SuccessMessage"] = "Người dùng đã được xóa thành công.";
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Lỗi khi xóa user!";
+                    TempData["ErrorMessage"] = "Không thể xóa người dùng.";
                 }
             }
+
             return RedirectToAction(nameof(Index));
         }
+
+        // GET: Admin/Users/ResetPassword/5
+        public async Task<IActionResult> ResetPassword(string id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            var model = new ResetPasswordViewModel
+            {
+                Id = user.Id,
+                Email = user.Email
+            };
+
+            return View(model);
+        }
+
+        // POST: Admin/Users/ResetPassword/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByIdAsync(model.Id);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Xóa mật khẩu hiện tại và đặt mật khẩu mới
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, resetToken, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "Đã đặt lại mật khẩu thành công.";
+                return RedirectToAction(nameof(Index));
+            }
+            else
+            {
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+                return View(model);
+            }
+        }
+    }
+
+    // Cập nhật UserViewModel
+    public class UserViewModel
+    {
+        public string Id { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Roles { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public bool IsActive { get; set; } = true;
+    }
+
+    // Cập nhật CreateUserViewModel
+    public class CreateUserViewModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100, MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu")]
+        public string Password { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Xác nhận mật khẩu")]
+        [Compare("Password", ErrorMessage = "Mật khẩu và xác nhận mật khẩu không khớp.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Họ")]
+        [StringLength(100)]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Tên")]
+        [StringLength(100)]
+        public string LastName { get; set; } = string.Empty;
+
+        [Phone]
+        [Display(Name = "Số điện thoại")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [Display(Name = "Quyền")]
+        public string Role { get; set; } = "User";
+    }
+
+    // Cập nhật EditUserViewModel
+    public class EditUserViewModel
+    {
+        public string Id { get; set; } = string.Empty;
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Họ")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Tên")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Phone]
+        [Display(Name = "Số điện thoại")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [Display(Name = "Quyền")]
+        public string Role { get; set; } = "User";
+
+        [Display(Name = "Hoạt động")]
+        public bool IsActive { get; set; } = true;
+    }
+
+    // Cập nhật ResetPasswordViewModel
+    public class ResetPasswordViewModel
+    {
+        public string Id { get; set; } = string.Empty;
+
+        [Display(Name = "Email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100, MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu mới")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Xác nhận mật khẩu mới")]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu mới và xác nhận mật khẩu không khớp.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

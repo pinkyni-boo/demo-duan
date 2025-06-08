@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace demo_duan.Models
 {
@@ -6,46 +7,69 @@ namespace demo_duan.Models
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng chọn phim")]
-        [Display(Name = "Phim")]
+        [Required]
         public int MovieId { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng chọn rạp chiếu")]
-        [Display(Name = "Rạp chiếu phim")]
-        public int TheaterId { get; set; }
-
-        [Required(ErrorMessage = "Vui lòng chọn phòng chiếu")]
-        [Display(Name = "Phòng chiếu")]
+        [Required]
         public int CinemaId { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng chọn ngày chiếu")]
-        [Display(Name = "Ngày chiếu")]
+        // Thêm TheaterId navigation
+        [NotMapped]
+        public int TheaterId => Cinema?.TheaterId ?? 0;
+
+        [Required]
         [DataType(DataType.Date)]
-        public DateTime Date { get; set; }
+        [Display(Name = "Ngày chiếu")]
+        public DateTime ShowDate { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng chọn giờ chiếu")]
+        [Required]
+        [DataType(DataType.Time)]
         [Display(Name = "Giờ chiếu")]
-        public TimeSpan Time { get; set; }
+        public TimeSpan ShowTime { get; set; }
 
-        [Display(Name = "Số ghế có sẵn")]
-        [Range(0, 1000, ErrorMessage = "Số ghế phải từ 0 đến 1000")]
-        public int AvailableSeats { get; set; }
-
-        [Display(Name = "Tổng số ghế")]
-        public int TotalSeats { get; set; }
-
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Giá vé")]
-        [Range(0, double.MaxValue, ErrorMessage = "Giá vé phải lớn hơn 0")]
-        [DataType(DataType.Currency)]
         public decimal Price { get; set; }
 
         [Display(Name = "Trạng thái")]
-        public string Status { get; set; } = "Scheduled"; // Scheduled, Cancelled, Completed
+        public string Status { get; set; } = "Available"; // Available, Full, Cancelled, Completed
+
+        [Display(Name = "Hoạt động")]
+        public bool IsActive { get; set; } = true;
+
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
+
+        public DateTime? UpdatedDate { get; set; }
 
         // Navigation properties
         public virtual Movie Movie { get; set; } = null!;
-        public virtual Theater Theater { get; set; } = null!;
         public virtual Cinema Cinema { get; set; } = null!;
         public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+
+        // Computed properties
+        [NotMapped]
+        [Display(Name = "Ngày")]
+        public DateTime Date => ShowDate;
+
+        [NotMapped]
+        [Display(Name = "Giờ")]
+        public TimeSpan Time => ShowTime;
+
+        [NotMapped]
+        [Display(Name = "Rạp chiếu")]
+        public virtual Theater? Theater => Cinema?.Theater;
+
+        [NotMapped]
+        [Display(Name = "Tổng số ghế")]
+        public int TotalSeats => Cinema?.TotalSeats ?? 0;
+
+        [NotMapped]
+        [Display(Name = "Số ghế đã đặt")]
+        public int BookedSeats => Tickets?.Count(t => t.Status != "Cancelled") ?? 0;
+
+        [NotMapped]
+        [Display(Name = "Số ghế còn trống")]
+        public int AvailableSeats => TotalSeats - BookedSeats;
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using demo_duan.Models;
 using Microsoft.EntityFrameworkCore;
+using demo_duan.Areas.Identity.Data;
 
 namespace demo_duan.Data
 {
@@ -9,7 +10,7 @@ namespace demo_duan.Data
         public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
             // Create roles
             string[] roleNames = { "Admin", "User" };
@@ -27,7 +28,7 @@ namespace demo_duan.Data
             
             if (adminUser == null)
             {
-                var admin = new IdentityUser
+                var admin = new ApplicationUser
                 {
                     UserName = adminEmail,
                     Email = adminEmail,

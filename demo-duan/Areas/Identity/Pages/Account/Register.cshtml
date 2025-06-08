@@ -1,0 +1,108 @@
+@page
+@model demo_duan.Areas.Identity.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Đăng ký tài khoản";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">@ViewData["Title"]</h3>
+            </div>
+            <div class="card-body">
+                <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <!-- Ẩn trường FullName -->
+                    <input asp-for="Input.FullName" type="hidden" />
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.FirstName" class="form-label fw-bold"></label>
+                            <input asp-for="Input.FirstName" class="form-control" placeholder="Nhập họ" required />
+                            <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.LastName" class="form-label fw-bold"></label>
+                            <input asp-for="Input.LastName" class="form-control" placeholder="Nhập tên" required />
+                            <span asp-validation-for="Input.LastName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Input.Email" class="form-label fw-bold"></label>
+                        <input asp-for="Input.Email" class="form-control" placeholder="name@example.com" />
+                        <span asp-validation-for="Input.Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.DateOfBirth" class="form-label fw-bold"></label>
+                            <input asp-for="Input.DateOfBirth" class="form-control" type="date" />
+                            <span asp-validation-for="Input.DateOfBirth" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.Gender" class="form-label fw-bold"></label>
+                            <select asp-for="Input.Gender" class="form-select">
+                                <option value="">-- Chọn giới tính --</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                            <span asp-validation-for="Input.Gender" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Input.Address" class="form-label fw-bold"></label>
+                        <textarea asp-for="Input.Address" class="form-control" rows="2" placeholder="Nhập địa chỉ của bạn"></textarea>
+                        <span asp-validation-for="Input.Address" class="text-danger"></span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.Password" class="form-label fw-bold"></label>
+                            <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                            <span asp-validation-for="Input.Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.ConfirmPassword" class="form-label fw-bold"></label>
+                            <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                            <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-100 btn btn-lg btn-primary mt-3">Đăng ký</button>
+                </form>
+            </div>
+            <div class="card-footer text-center py-3">
+                <p class="mb-0">
+                    <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none">Đã có tài khoản? Đăng nhập ngay</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Tự động cập nhật FullName khi FirstName hoặc LastName thay đổi
+        $(document).ready(function () {
+            function updateFullName() {
+                var firstName = $("#Input_FirstName").val() || "";
+                var lastName = $("#Input_LastName").val() || "";
+                var fullName = (firstName + " " + lastName).trim();
+                $("#Input_FullName").val(fullName);
+            }
+
+            $("#Input_FirstName, #Input_LastName").on("input", function () {
+                updateFullName();
+            });
+
+            // Cập nhật ban đầu
+            updateFullName();
+        });
+    </script>
+}

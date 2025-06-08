@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.AspNetCore.Identity;
+using demo_duan.Areas.Identity.Data;
 
 namespace demo_duan.Models
 {
@@ -9,35 +9,49 @@ namespace demo_duan.Models
         public int Id { get; set; }
 
         [Required]
-        public int ShowtimeId { get; set; }
+        [StringLength(50)]
+        public string TicketCode { get; set; } = string.Empty;
+
+        [Required]
+        public string UserId { get; set; } = null!;
 
         [Required]
         public int MovieId { get; set; }
 
         [Required]
-        [StringLength(450)]
-        public string UserId { get; set; } = null!;
+        public int ShowtimeId { get; set; }
 
         [Required]
-        [Range(1, 500)]
-        public int SeatNumber { get; set; }
+        [StringLength(10)]
+        public string SeatNumber { get; set; } = string.Empty;
 
         [Required]
-        [DataType(DataType.Currency)]
-        public decimal TotalPrice { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Price { get; set; }
 
+        [Required]
         public DateTime BookingDate { get; set; } = DateTime.Now;
 
-        [StringLength(50)]
-        public string Status { get; set; } = "Booked";
-
+        [Required]
         [StringLength(20)]
-        public string TicketCode { get; set; } = null!;
+        public string Status { get; set; } = "Booked"; // Booked, Cancelled, Used
 
-        // Navigation properties
-        public virtual Showtime Showtime { get; set; } = null!;
+        [StringLength(500)]
+        public string? Notes { get; set; }
+
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
+
+        public DateTime? UpdatedDate { get; set; }
+
+        // Computed property - for backward compatibility
+        [NotMapped]
+        public decimal TotalPrice => Price;
+
+        // Navigation Properties
+        public virtual ApplicationUser User { get; set; } = null!;
         public virtual Movie Movie { get; set; } = null!;
-        public virtual IdentityUser User { get; set; } = null!;
+        public virtual Showtime Showtime { get; set; } = null!;
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+        public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
     }
 }

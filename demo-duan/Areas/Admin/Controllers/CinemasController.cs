@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using demo_duan.Data;
 using demo_duan.Models;
 
 namespace demo_duan.Areas.Admin.Controllers
@@ -53,7 +52,7 @@ namespace demo_duan.Areas.Admin.Controllers
         // POST: Admin/Cinemas/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("TheaterId,Name,Seats,Type,Description,IsActive")] Cinema cinema)
+        public async Task<IActionResult> Create([Bind("TheaterId,Name,TotalSeats,Type,Description,IsActive,Rows,SeatsPerRow")] Cinema cinema)
         {
             ModelState.Remove("Theater");
             ModelState.Remove("Showtimes");
@@ -64,9 +63,6 @@ namespace demo_duan.Areas.Admin.Controllers
                 {
                     _context.Add(cinema);
                     await _context.SaveChangesAsync();
-                    
-                    // Cập nhật TotalCapacity của Theater
-                    await UpdateTheaterCapacity(cinema.TheaterId);
                     
                     TempData["SuccessMessage"] = "Phòng chiếu đã được tạo thành công!";
                     return RedirectToAction(nameof(Index));
@@ -96,7 +92,7 @@ namespace demo_duan.Areas.Admin.Controllers
         // POST: Admin/Cinemas/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,TheaterId,Name,Seats,Type,Description,IsActive")] Cinema cinema)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,TheaterId,Name,TotalSeats,Type,Description,IsActive,Rows,SeatsPerRow")] Cinema cinema)
         {
             if (id != cinema.Id) return NotFound();
 
@@ -114,13 +110,6 @@ namespace demo_duan.Areas.Admin.Controllers
 
                     _context.Update(cinema);
                     await _context.SaveChangesAsync();
-                    
-                    // Cập nhật TotalCapacity cho cả theater cũ và mới
-                    await UpdateTheaterCapacity(oldTheaterId);
-                    if (oldTheaterId != cinema.TheaterId)
-                    {
-                        await UpdateTheaterCapacity(cinema.TheaterId);
-                    }
                     
                     TempData["SuccessMessage"] = "Phòng chiếu đã được cập nhật!";
                     return RedirectToAction(nameof(Index));
@@ -168,9 +157,6 @@ namespace demo_duan.Areas.Admin.Controllers
                 _context.Cinemas.Remove(cinema);
                 await _context.SaveChangesAsync();
                 
-                // Cập nhật TotalCapacity của Theater
-                await UpdateTheaterCapacity(theaterId);
-                
                 TempData["SuccessMessage"] = "Phòng chiếu đã được xóa!";
             }
 
@@ -183,7 +169,7 @@ namespace demo_duan.Areas.Admin.Controllers
         {
             var cinemas = await _context.Cinemas
                 .Where(c => c.TheaterId == theaterId && c.IsActive)
-                .Select(c => new { c.Id, c.Name, c.Seats })
+                .Select(c => new { c.Id, c.Name, Seats = c.TotalSeats })
                 .ToListAsync();
 
             return Json(cinemas);
@@ -204,18 +190,11 @@ namespace demo_duan.Areas.Admin.Controllers
             ViewBag.TheaterId = new SelectList(theaters, "Id", "Name", cinema?.TheaterId);
         }
 
+        // Fix UpdateTheaterCapacity to work with computed property
         private async Task UpdateTheaterCapacity(int theaterId)
         {
-            var theater = await _context.Theaters
-                .Include(t => t.Cinemas)
-                .FirstOrDefaultAsync(t => t.Id == theaterId);
-
-            if (theater != null)
-            {
-                theater.TotalCapacity = theater.Cinemas.Sum(c => c.Seats);
-                _context.Update(theater);
-                await _context.SaveChangesAsync();
-            }
+            // Không cần update TotalCapacity vì nó là computed property
+            // Chỉ cần lưu thay đổi của Cinema
         }
     }
 }

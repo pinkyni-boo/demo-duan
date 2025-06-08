@@ -1,60 +1,59 @@
+using demo_duan.Models;
 using Microsoft.EntityFrameworkCore;
 using demo_duan.Data;
 
 namespace demo_duan.Services
 {
-    public class MovieStatusUpdateService : BackgroundService
+    public class MovieStatusUpdateService : IHostedService, IDisposable
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<MovieStatusUpdateService> _logger;
+        private Timer? _timer;
 
-        public MovieStatusUpdateService(IServiceProvider serviceProvider, ILogger<MovieStatusUpdateService> logger)
+        public MovieStatusUpdateService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            _logger = logger;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromHours(24));
+            return Task.CompletedTask;
+        }
+
+        private void DoWork(object? state)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var movies = context.Movies.ToList();
+            var updated = false;
+
+            foreach (var movie in movies)
             {
-                try
+                var oldStatus = movie.Status;
+                movie.UpdateStatusBasedOnReleaseDate();
+                
+                if (oldStatus != movie.Status)
                 {
-                    using var scope = _serviceProvider.CreateScope();
-                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                    var movies = await context.Movies
-                        .Where(m => m.IsActive)
-                        .ToListAsync(stoppingToken);
-
-                    var updatedCount = 0;
-                    foreach (var movie in movies)
-                    {
-                        var oldStatus = movie.Status;
-                        movie.UpdateStatusBasedOnReleaseDate();
-                        
-                        if (oldStatus != movie.Status)
-                        {
-                            context.Update(movie);
-                            updatedCount++;
-                            _logger.LogInformation($"Updated movie {movie.Title} status from {oldStatus} to {movie.Status}");
-                        }
-                    }
-
-                    if (updatedCount > 0)
-                    {
-                        await context.SaveChangesAsync(stoppingToken);
-                        _logger.LogInformation($"Updated status for {updatedCount} movies");
-                    }
+                    updated = true;
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error occurred while updating movie statuses");
-                }
-
-                // Chạy mỗi giờ
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
             }
+
+            if (updated)
+            {
+                context.SaveChanges();
+            }
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _timer?.Change(Timeout.Infinite, 0);
+            return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            _timer?.Dispose();
         }
     }
 }

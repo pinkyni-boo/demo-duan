@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using demo_duan.Data;
 using demo_duan.Models;
 
 namespace demo_duan.Areas.Admin.Controllers

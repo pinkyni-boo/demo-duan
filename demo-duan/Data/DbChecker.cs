@@ -6,27 +6,58 @@ namespace demo_duan.Data
 {
     public static class DbChecker
     {
-        public static async Task EnsureDatabaseSeeded(ApplicationDbContext context)
+        public static async Task SeedDataAsync(IServiceProvider serviceProvider)
         {
-            await context.Database.EnsureCreatedAsync();
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            // Seed Categories
+            try
+            {
+                // Ensure database is created
+                await context.Database.EnsureCreatedAsync();
+
+                // Seed Categories
+                await SeedCategoriesAsync(context);
+
+                // Seed Payment Methods
+                await SeedPaymentMethodsAsync(context);
+
+                // Seed Theaters
+                await SeedTheatersAsync(context);
+
+                // Seed Movies
+                await SeedMoviesAsync(context);
+
+                await context.SaveChangesAsync();
+                Console.WriteLine("✅ Database seeded successfully!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error seeding database: {ex.Message}");
+                throw;
+            }
+        }
+
+        private static async Task SeedCategoriesAsync(ApplicationDbContext context)
+        {
             if (!await context.Categories.AnyAsync())
             {
                 var categories = new List<Category>
                 {
-                    new Category { Name = "Hành động", Description = "Phim hành động" },
-                    new Category { Name = "Kinh dị", Description = "Phim kinh dị" },
-                    new Category { Name = "Hài hước", Description = "Phim hài hước" },
-                    new Category { Name = "Lãng mạn", Description = "Phim lãng mạn" },
-                    new Category { Name = "Khoa học viễn tưởng", Description = "Phim khoa học viễn tưởng" }
+                    new Category { Name = "Hành động", Description = "Phim hành động", IsActive = true },
+                    new Category { Name = "Kinh dị", Description = "Phim kinh dị", IsActive = true },
+                    new Category { Name = "Hài hước", Description = "Phim hài hước", IsActive = true },
+                    new Category { Name = "Lãng mạn", Description = "Phim lãng mạn", IsActive = true },
+                    new Category { Name = "Khoa học viễn tưởng", Description = "Phim khoa học viễn tưởng", IsActive = true }
                 };
 
                 await context.Categories.AddRangeAsync(categories);
                 await context.SaveChangesAsync();
             }
+        }
 
-            // Seed Movies
+        private static async Task SeedMoviesAsync(ApplicationDbContext context)
+        {
             if (!await context.Movies.AnyAsync())
             {
                 var actionCategory = await context.Categories.FirstAsync(c => c.Name == "Hành động");
@@ -45,20 +76,26 @@ namespace demo_duan.Data
                         Rating = 8.5m,
                         Language = "Tiếng Anh - Phụ đề Việt",
                         Director = "Louis Leterrier",
-                        Cast = "Vin Diesel, Jason Momoa, Michelle Rodriguez"
+                        Cast = "Vin Diesel, Jason Momoa, Michelle Rodriguez",
+                        Status = MovieStatus.NowShowing
                     }
                 };
 
+                await context.Movies.AddRangeAsync(movies);
+                await context.SaveChangesAsync();
+                
+                // Update movie status
                 foreach (var movie in movies)
                 {
                     movie.UpdateStatusBasedOnReleaseDate();
                 }
-
-                await context.Movies.AddRangeAsync(movies);
+                
                 await context.SaveChangesAsync();
             }
+        }
 
-            // Seed Theaters
+        private static async Task SeedTheatersAsync(ApplicationDbContext context)
+        {
             if (!await context.Theaters.AnyAsync())
             {
                 var theaters = new List<Theater>
@@ -71,41 +108,45 @@ namespace demo_duan.Data
                         Email = "cgv.vincom@cinema.com",
                         City = "TP.HCM",
                         IsActive = true
-                    },
-                    new Theater
-                    {
-                        Name = "Galaxy Nguyễn Du",
-                        Address = "Nguyễn Du, Quận 1, TP.HCM", 
-                        Phone = "0901234568",
-                        Email = "galaxy.nguyendu@cinema.com",
-                        City = "TP.HCM",
-                        IsActive = true
-                    },
-                    new Theater
-                    {
-                        Name = "Lotte Cinema",
-                        Address = "Lotte Center, Quận 1, TP.HCM",
-                        Phone = "0901234569",
-                        Email = "lotte.center@cinema.com",
-                        City = "TP.HCM",
-                        IsActive = true
-                    },
-                    new Theater
-                    {
-                        Name = "BHD Star Bitexco",
-                        Address = "Bitexco Financial Tower, Quận 1, TP.HCM",
-                        Phone = "0901234570",
-                        Email = "bhd.bitexco@cinema.com",
-                        City = "TP.HCM",
-                        IsActive = true
                     }
                 };
 
                 await context.Theaters.AddRangeAsync(theaters);
                 await context.SaveChangesAsync();
-            }
 
-            // Seed Payment Methods
+                // Seed Cinemas for each theater
+                var theater = theaters.First();
+                var cinemas = new List<Cinema>
+                {
+                    new Cinema
+                    {
+                        Name = "Phòng chiếu 1",
+                        TheaterId = theater.Id,
+                        TotalSeats = 100,
+                        Rows = 10,
+                        SeatsPerRow = 10,
+                        Type = "2D",
+                        IsActive = true
+                    },
+                    new Cinema
+                    {
+                        Name = "Phòng chiếu 2", 
+                        TheaterId = theater.Id,
+                        TotalSeats = 80,
+                        Rows = 8,
+                        SeatsPerRow = 10,
+                        Type = "3D",
+                        IsActive = true
+                    }
+                };
+
+                await context.Cinemas.AddRangeAsync(cinemas);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        private static async Task SeedPaymentMethodsAsync(ApplicationDbContext context)
+        {
             if (!await context.PaymentMethods.AnyAsync())
             {
                 var paymentMethods = new List<PaymentMethod>
@@ -127,54 +168,11 @@ namespace demo_duan.Data
                         IsActive = true,
                         TransactionFee = 1.5m,
                         DisplayOrder = 2
-                    },
-                    new PaymentMethod
-                    {
-                        Name = "MoMo",
-                        Description = "Thanh toán qua ví MoMo",
-                        Icon = "/images/payment/momo.png",
-                        IsActive = true,
-                        TransactionFee = 2.0m,
-                        DisplayOrder = 3
-                    },
-                    new PaymentMethod
-                    {
-                        Name = "ZaloPay",
-                        Description = "Thanh toán qua ZaloPay",
-                        Icon = "/images/payment/zalopay.png",
-                        IsActive = true,
-                        TransactionFee = 1.8m,
-                        DisplayOrder = 4
                     }
                 };
 
                 await context.PaymentMethods.AddRangeAsync(paymentMethods);
                 await context.SaveChangesAsync();
-            }
-
-            // Seed sample Payments (nếu cần)
-            if (!await context.Payments.AnyAsync())
-            {
-                var firstTicket = await context.Tickets.FirstOrDefaultAsync();
-                var cashMethod = await context.PaymentMethods.FirstOrDefaultAsync(pm => pm.Name == "Tiền mặt");
-                
-                if (firstTicket != null && cashMethod != null)
-                {
-                    var samplePayment = new Payment
-                    {
-                        TicketId = firstTicket.Id,
-                        PaymentMethodId = cashMethod.Id,
-                        UserId = firstTicket.UserId,
-                        Amount = firstTicket.TotalPrice,
-                        Status = PaymentStatus.Completed,
-                        PaymentDate = DateTime.Now,
-                        TransactionId = "CASH_" + DateTime.Now.Ticks,
-                        ProcessedDate = DateTime.Now
-                    };
-
-                    await context.Payments.AddAsync(samplePayment);
-                    await context.SaveChangesAsync();
-                }
             }
         }
     }
