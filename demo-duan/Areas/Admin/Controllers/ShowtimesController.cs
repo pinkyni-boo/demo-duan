@@ -10,10 +10,12 @@ namespace demo_duan.Areas.Admin.Controllers
     public class ShowtimesController : BaseAdminController
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<ShowtimesController> _logger;
 
-        public ShowtimesController(ApplicationDbContext context)
+        public ShowtimesController(ApplicationDbContext context, ILogger<ShowtimesController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Admin/Showtimes
@@ -48,72 +50,90 @@ namespace demo_duan.Areas.Admin.Controllers
         }
 
         // GET: Admin/Showtimes/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            await LoadDropdownData();
+            // Populate ViewBag with data for dropdowns
+            ViewBag.Movies = _context.Movies.ToList();
+            ViewBag.Theaters = _context.Theaters.ToList();
             return View();
         }
 
         // POST: Admin/Showtimes/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Showtime model)
+        public async Task<IActionResult> Create(IFormCollection formCollection)
         {
-            // Thêm debug logging
-            System.Diagnostics.Debug.WriteLine($"Received data: MovieId={model.MovieId}, CinemaId={model.CinemaId}");
+            // Tạo mới đối tượng Showtime từ form data
+            var showtime = new Showtime();
             
-            // Fix lỗi bằng cách kiểm tra thủ công
-            if (model.MovieId == 0)
+            // Gán giá trị từ form một cách rõ ràng
+            if (int.TryParse(formCollection["MovieId"], out int movieId))
             {
-                ModelState.AddModelError("MovieId", "Phim không được để trống");
+                showtime.MovieId = movieId;
             }
             
-            if (model.CinemaId == 0)
+            if (int.TryParse(formCollection["CinemaId"], out int cinemaId))
             {
-                ModelState.AddModelError("CinemaId", "Phòng chiếu không được để trống");
+                showtime.CinemaId = cinemaId;
             }
             
-            // Nếu model valid (hoặc bỏ qua validation khi debug)
-            if (ModelState.IsValid)
+            if (DateTime.TryParse(formCollection["ShowDate"], out DateTime showDate))
+            {
+                showtime.ShowDate = showDate;
+            }
+            
+            if (TimeSpan.TryParse(formCollection["ShowTime"], out TimeSpan showTime))
+            {
+                showtime.ShowTime = showTime;
+            }
+            
+            if (decimal.TryParse(formCollection["Price"], out decimal price))
+            {
+                showtime.Price = price;
+            }
+            
+            // Kiểm tra dữ liệu thủ công
+            bool isValid = true;
+            
+            if (showtime.MovieId <= 0)
+            {
+                ModelState.AddModelError("MovieId", "The Movie field is required.");
+                isValid = false;
+            }
+            
+            if (showtime.CinemaId <= 0)
+            {
+                ModelState.AddModelError("CinemaId", "The Cinema field is required.");
+                isValid = false;
+            }
+            
+            if (isValid)
             {
                 try
                 {
-                    // Đảm bảo các trường khác đã được set
-                    model.Status = "Available";
-                    model.IsActive = true;
-                    model.CreatedDate = DateTime.Now;
+                    // Thiết lập các giá trị mặc định
+                    showtime.Status = "Available";
+                    showtime.IsActive = true;
+                    showtime.CreatedDate = DateTime.Now;
                     
-                    // Đảm bảo ShowDate không phải là default
-                    if (model.ShowDate == default)
-                    {
-                        model.ShowDate = DateTime.Today;
-                    }
-                    
-                    _context.Add(model);
+                    // Thêm và lưu
+                    _context.Add(showtime);
                     await _context.SaveChangesAsync();
+                    
                     return RedirectToAction(nameof(Index));
                 }
                 catch (Exception ex)
                 {
                     // Log lỗi
-                    System.Diagnostics.Debug.WriteLine($"Error saving showtime: {ex.Message}");
-                    ModelState.AddModelError("", "Có lỗi xảy ra khi lưu. Chi tiết: " + ex.Message);
+                    ModelState.AddModelError("", "Lỗi khi lưu: " + ex.Message);
                 }
             }
             
-            // Log tất cả lỗi validation
-            foreach (var state in ModelState)
-            {
-                foreach (var error in state.Value.Errors)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Validation error for {state.Key}: {error.ErrorMessage}");
-                }
-            }
+            // Nếu không thành công, hiển thị form lại
+            ViewBag.Movies = _context.Movies.ToList();
+            ViewBag.Theaters = _context.Theaters.ToList();
             
-            // Tạo lại danh sách cho dropdown
-            ViewBag.MovieId = new SelectList(_context.Movies, "Id", "Title", model.MovieId);
-            ViewBag.TheaterId = new SelectList(_context.Theaters, "Id", "Name");
-            return View(model);
+            return View(showtime);
         }
 
         // GET: Admin/Showtimes/Edit/5
@@ -199,18 +219,27 @@ namespace demo_duan.Areas.Admin.Controllers
 
         // API: Get cinemas by theater
         [HttpGet]
-        public async Task<IActionResult> GetCinemasByTheater(int theaterId)
+        public JsonResult GetCinemasByTheater(int theaterId)
         {
-            var cinemas = await _context.Cinemas
+            var cinemas = _context.Cinemas
                 .Where(c => c.TheaterId == theaterId)
                 .Select(c => new
                 {
                     id = c.Id,
                     name = c.Name,
                     seats = c.TotalSeats,
-                    type = c.Type // Thêm trường type
+                    type = c.Type
                 })
-                .ToListAsync();
+                .ToList();
+
+            // Log số lượng phòng chiếu tìm thấy
+            System.Diagnostics.Debug.WriteLine($"Found {cinemas.Count} cinemas for theater {theaterId}");
+            
+            // Log chi tiết từng phòng
+            foreach (var cinema in cinemas)
+            {
+                System.Diagnostics.Debug.WriteLine($"Cinema: Id={cinema.id}, Name={cinema.name}");
+            }
 
             return Json(cinemas);
         }

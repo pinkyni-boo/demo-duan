@@ -12,7 +12,7 @@ using demo_duan.Models;
 namespace demo_duan.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250609161902_AddUserNameFields")]
+    [Migration("20250609175437_AddUserNameFields")]
     partial class AddUserNameFields
     {
         /// <inheritdoc />

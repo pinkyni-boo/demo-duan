@@ -6,6 +6,8 @@
 }
 
 <div class="container mt-5 mb-5">
+    @Html.AntiForgeryToken()
+
     <!-- Booking Progress -->
     <div class="booking-progress mb-4">
         <div class="progress-step completed">
@@ -78,7 +80,9 @@
                             var date = today.AddDays(i);
                             var isActive = i == 0;
                             
-                            <div class="date-pill @(isActive ? "active" : "")" data-date="@date.ToString("yyyy-MM-dd")">
+                            <div class="date-pill @(isActive ? "active" : "")" 
+                                 data-date="@date.ToString("yyyy-MM-dd")"
+                                 onclick="selectDate(this, '@date.ToString("yyyy-MM-dd")')">
                                 <div class="date-day">@date.ToString("ddd")</div>
                                 <div class="date-number">@date.Day</div>
                                 <div class="date-month">@date.ToString("MMM")</div>
@@ -89,7 +93,7 @@
                     <!-- Theater selection -->
                     @foreach (var theater in theaters)
                     {
-                        <a href="#theater-@theater.Id" class="theater-item" data-bs-toggle="collapse" role="button" aria-expanded="false">
+                        <a href="#theater-@theater.Id" class="theater-item" data-theater-id="@theater.Id" data-bs-toggle="collapse" role="button" aria-expanded="false">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h5 class="mb-0">@theater.Name</h5>
@@ -109,10 +113,16 @@
                                 </div>
                                 
                                 <div class="showtime-content" data-theater-id="@theater.Id">
-                                    <!-- Showtimes will be loaded here -->
-                                    <div class="text-center no-showtimes">
-                                        <p class="mb-0">Chọn ngày để xem lịch chiếu</p>
-                                    </div>
+                                    @if (ViewBag.SelectedTheater != null && ViewBag.SelectedTheater == theater.Id && ViewBag.GroupedShowtimes != null)
+                                    {
+                                        <partial name="_ShowtimesPartial" model="ViewBag.GroupedShowtimes" />
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center no-showtimes">
+                                            <p class="mb-0">Chọn ngày để xem lịch chiếu</p>
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -124,6 +134,19 @@
                             <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
                             <h5>Không có rạp nào đang chiếu phim này</h5>
                             <p class="text-muted">Vui lòng chọn một bộ phim khác hoặc quay lại sau.</p>
+                            <div class="mt-3">
+                                <a href="/Home/Movies" class="btn btn-primary">
+                                    <i class="fas fa-film me-1"></i>Xem phim khác
+                                </a>
+                                <a href="/Home/MovieDetails/@Model.Id" class="btn btn-outline-secondary ms-2">
+                                    <i class="fas fa-info-circle me-1"></i>Xem chi tiết phim
+                                </a>
+                            </div>
+                            <div class="mt-4">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>Thông tin debug: Movie ID = @Model.Id
+                                </div>
+                            </div>
                         </div>
                     }
                 </div>
@@ -134,39 +157,35 @@
 
 @section Scripts {
     <script>
+        // Các biến toàn cục
+        let selectedDate = '@(ViewBag.SelectedDate?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd"))';
+        let selectedTheaterId = @(ViewBag.SelectedTheaterId != null ? ViewBag.SelectedTheaterId.ToString() : "null");
+        
         document.addEventListener('DOMContentLoaded', function() {
-            const datePills = document.querySelectorAll('.date-pill');
+            // Khởi tạo show/hide cho các phòng
             const theaterItems = document.querySelectorAll('.theater-item');
-            let selectedDate = document.querySelector('.date-pill.active')?.dataset.date || '@today.ToString("yyyy-MM-dd")';
-            let selectedTheaterId = null;
             
-            // Date selection
-            datePills.forEach(pill => {
-                pill.addEventListener('click', function() {
-                    datePills.forEach(p => p.classList.remove('active'));
-                    this.classList.add('active');
-                    selectedDate = this.dataset.date;
-                    
-                    // If a theater is expanded, load its showtimes
-                    if (selectedTheaterId) {
-                        loadShowtimes(selectedTheaterId, selectedDate);
+            // Nếu đã có theaterId được chọn, mở rộng nó
+            if (selectedTheaterId) {
+                const selectedTheaterItem = document.querySelector(`[data-theater-id="${selectedTheaterId}"]`);
+                if (selectedTheaterItem) {
+                    // Mở rộng phần tử
+                    const collapseEl = document.querySelector(selectedTheaterItem.getAttribute('href'));
+                    if (collapseEl) {
+                        collapseEl.classList.add('show');
+                        // Thay đổi icon
+                        const icon = selectedTheaterItem.querySelector('.fas');
+                        if (icon) {
+                            icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                        }
                     }
-                    
-                    // Otherwise, reset all theater showtimes
-                    document.querySelectorAll('.showtime-content').forEach(content => {
-                        content.innerHTML = `
-                            <div class="text-center no-showtimes">
-                                <p class="mb-0">Chọn rạp để xem lịch chiếu</p>
-                            </div>
-                        `;
-                    });
-                });
-            });
+                }
+            }
             
-            // Theater selection
+            // Xử lý sự kiện chọn rạp
             theaterItems.forEach(item => {
                 item.addEventListener('click', function() {
-                    const theaterId = this.getAttribute('href').replace('#theater-', '');
+                    const theaterId = this.getAttribute('data-theater-id');
                     selectedTheaterId = theaterId;
                     
                     // Toggle chevron icon
@@ -179,95 +198,140 @@
                     
                     // Load showtimes when expanding
                     const collapseEl = document.querySelector(this.getAttribute('href'));
-                    if (!collapseEl.classList.contains('show')) {
+                    if (collapseEl && !collapseEl.classList.contains('show')) {
                         loadShowtimes(theaterId, selectedDate);
                     }
                 });
             });
-            
-            // Function to load showtimes
-            function loadShowtimes(theaterId, date) {
-                const movieId = '@Model.Id';
-                const showtimeContent = document.querySelector(`[data-theater-id="${theaterId}"]`);
-                const loadingEl = showtimeContent.closest('.showtime-list').querySelector('.showtime-loading');
-                
-                // Show loading
-                showtimeContent.classList.add('d-none');
-                loadingEl.classList.remove('d-none');
-                
-                // Make AJAX request to get showtimes
-                fetch(`/api/showtimes?movieId=${movieId}&theaterId=${theaterId}&date=${date}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Hide loading
-                        loadingEl.classList.add('d-none');
-                        showtimeContent.classList.remove('d-none');
-                        
-                        if (data && data.length > 0) {
-                            // Group showtimes by cinema
-                            const cinemaShowtimes = {};
-                            data.forEach(showtime => {
-                                if (!cinemaShowtimes[showtime.cinemaId]) {
-                                    cinemaShowtimes[showtime.cinemaId] = {
-                                        cinemaId: showtime.cinemaId,
-                                        cinemaName: showtime.cinemaName,
-                                        cinemaType: showtime.cinemaType,
-                                        showtimes: []
-                                    };
-                                }
-                                cinemaShowtimes[showtime.cinemaId].showtimes.push(showtime);
-                            });
-                            
-                            // Render showtimes
-                            let html = '';
-                            for (const cinemaId in cinemaShowtimes) {
-                                const cinema = cinemaShowtimes[cinemaId];
-                                html += `
-                                    <div class="cinema-group mb-3">
-                                        <h6 class="cinema-name">
-                                            <i class="fas fa-tv me-1"></i>${cinema.cinemaName}
-                                            <span class="badge bg-info ms-2">${cinema.cinemaType}</span>
-                                        </h6>
-                                        <div class="showtime-buttons">
-                                `;
-                                
-                                cinema.showtimes.forEach(showtime => {
-                                    html += `
-                                        <a href="/Home/SelectSeats/${showtime.id}" class="btn btn-outline-primary showtime-btn">
-                                            <div class="time">${showtime.showTime}</div>
-                                            <div class="seats">${showtime.availableSeats} ghế trống</div>
-                                            <div class="price">${showtime.price.toLocaleString('vi-VN')} đ</div>
-                                        </a>
-                                    `;
-                                });
-                                
-                                html += `
-                                        </div>
-                                    </div>
-                                `;
-                            }
-                            
-                            showtimeContent.innerHTML = html;
-                        } else {
-                            showtimeContent.innerHTML = `
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>Không có suất chiếu nào trong ngày này
-                                </div>
-                            `;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading showtimes:', error);
-                        loadingEl.classList.add('d-none');
-                        showtimeContent.classList.remove('d-none');
-                        showtimeContent.innerHTML = `
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-circle me-2"></i>Lỗi khi tải lịch chiếu. Vui lòng thử lại.
-                            </div>
-                        `;
-                    });
-            }
         });
+        
+        // Function để chọn ngày
+        function selectDate(element, date) {
+            // Bỏ chọn tất cả các nút ngày
+            document.querySelectorAll('.date-pill').forEach(pill => {
+                pill.classList.remove('active');
+            });
+            
+            // Đánh dấu nút hiện tại là active
+            element.classList.add('active');
+            
+            // Cập nhật ngày đã chọn
+            selectedDate = date;
+            
+            // Nếu đã chọn rạp, load lại lịch chiếu
+            if (selectedTheaterId) {
+                loadShowtimes(selectedTheaterId, selectedDate);
+            }
+        }
+        
+        // Function để load lịch chiếu
+        function loadShowtimes(theaterId, date) {
+            const movieId = '@Model.Id';
+            
+            // Tìm phần tử theo cách chính xác hơn
+            const theaterContainer = document.querySelector(`#theater-${theaterId}`);
+            if (!theaterContainer) {
+                console.error(`Theater container #theater-${theaterId} not found`);
+                return;
+            }
+            
+            const showtimeContent = theaterContainer.querySelector('.showtime-content');
+            const loadingEl = theaterContainer.querySelector('.showtime-loading');
+            
+            if (!showtimeContent || !loadingEl) {
+                console.error('Showtime content or loading element not found');
+                return;
+            }
+            
+            // Show loading
+            showtimeContent.classList.add('d-none');
+            loadingEl.classList.remove('d-none');
+            
+            // Chuẩn bị dữ liệu form
+            const formData = new FormData();
+            formData.append('movieId', movieId);
+            formData.append('theaterId', theaterId);
+            formData.append('date', date);
+            
+            // Thêm token
+            const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (tokenElement) {
+                formData.append('__RequestVerificationToken', tokenElement.value);
+            }
+            
+            // Gọi đến controller action
+            fetch('/Home/LoadShowtimes', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(html => {
+                showtimeContent.innerHTML = html;
+                loadingEl.classList.add('d-none');
+                showtimeContent.classList.remove('d-none');
+            })
+            .catch(error => {
+                console.error('Error loading showtimes:', error);
+                loadingEl.classList.add('d-none');
+                showtimeContent.classList.remove('d-none');
+                showtimeContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>Lỗi khi tải lịch chiếu: ${error.message || 'Unknown error'}
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-danger" onclick="retryLoadShowtimes()">
+                                <i class="fas fa-sync-alt me-1"></i>Thử lại
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        // Function để thử lại việc load lịch chiếu
+        function retryLoadShowtimes() {
+            if (selectedTheaterId) {
+                loadShowtimes(selectedTheaterId, selectedDate);
+            }
+        }
+        
+        // Function để chọn ngày khác
+        function selectOtherDate() {
+            // Cuộn lên phần chọn ngày
+            const datePills = document.querySelector('.date-pills');
+            if (datePills) {
+                datePills.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        // Function để hiển thị thông tin debug
+        function showDebugInfo() {
+            const debugContainer = document.getElementById('debugInfoContainer');
+            if (debugContainer) {
+                debugContainer.classList.toggle('d-none');
+            } else {
+                const errorEl = document.querySelector('.alert-danger');
+                if (errorEl) {
+                    const debugHTML = `
+                        <div id="debugInfoContainer" class="mt-3">
+                            <div class="alert alert-secondary">
+                                <h6>Thông tin debug:</h6>
+                                <p>Phim ID: @Model.Id</p>
+                                <p>Rạp ID: ${selectedTheaterId}</p>
+                                <p>Ngày: ${selectedDate}</p>
+                            </div>
+                        </div>`;
+                    errorEl.insertAdjacentHTML('afterend', debugHTML);
+                }
+            }
+        }
     </script>
     
     <style>

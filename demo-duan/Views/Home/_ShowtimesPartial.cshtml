@@ -1,0 +1,33 @@
+@model IEnumerable<object>
+
+@if (Model != null && Model.Any())
+{
+    foreach (var item in Model)
+    {
+        dynamic cinema = ((dynamic)item).Cinema;
+        var showtimes = ((dynamic)item).Showtimes as IEnumerable<dynamic>;
+        
+        <div class="cinema-group mb-3">
+            <h6 class="cinema-name">
+                <i class="fas fa-tv me-1"></i>@cinema.Name
+                <span class="badge bg-info ms-2">@cinema.Type</span>
+            </h6>
+            <div class="showtime-buttons">
+                @foreach (var showtime in showtimes)
+                {
+                    <a href="/Home/SelectSeats/@showtime.Id" class="btn btn-outline-primary showtime-btn">
+                        <div class="time">@(((TimeSpan)showtime.ShowTime).ToString(@"hh\:mm"))</div>
+                        <div class="seats">@showtime.AvailableSeats ghế trống</div>
+                        <div class="price">@(((decimal)showtime.Price).ToString("N0")) đ</div>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Không có suất chiếu nào trong ngày đã chọn
+    </div>
+}
