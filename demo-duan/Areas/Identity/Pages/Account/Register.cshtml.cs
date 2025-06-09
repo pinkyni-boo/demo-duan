@@ -68,24 +68,26 @@ namespace demo_duan.Areas.Identity.Pages.Account
             [DataType(DataType.Date)]
             public DateTime? DateOfBirth { get; set; }
 
+            [Required]
             [Display(Name = "Giới tính")]
             [StringLength(10)]
-            public string Gender { get; set; }
+            public string Gender { get; set; } = string.Empty;
 
+            [Required]
             [Display(Name = "Địa chỉ")]
             [StringLength(500)]
-            public string Address { get; set; }
+            public string Address { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Vui lòng nhập mật khẩu")]
             [StringLength(100, ErrorMessage = "Mật khẩu phải có ít nhất {2} ký tự và tối đa {1} ký tự.", MinimumLength = 6)]
             [DataType(DataType.Password)]
             [Display(Name = "Mật khẩu")]
-            public string Password { get; set; }
+            public string Password { get; set; } = string.Empty;
 
             [DataType(DataType.Password)]
             [Display(Name = "Xác nhận mật khẩu")]
             [Compare("Password", ErrorMessage = "Mật khẩu và xác nhận mật khẩu không khớp.")]
-            public string ConfirmPassword { get; set; }
+            public string ConfirmPassword { get; set; } = string.Empty;
             public string? PhoneNumber { get; internal set; }
         }
 

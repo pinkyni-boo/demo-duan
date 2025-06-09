@@ -1,0 +1,332 @@
+@model demo_duan.Models.Theater
+@{
+    ViewData["Title"] = "Phim tại " + Model.Name;
+}
+
+<div class="container mt-4 mb-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Thông tin rạp -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-building me-2"></i>@Model.Name
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <i class="fas fa-map-marker-alt me-2 text-danger"></i>
+                        <strong>Địa chỉ:</strong> @Model.Address
+                    </div>
+                    
+                    <div class="mb-3">
+                        <i class="fas fa-phone-alt me-2 text-success"></i>
+                        <strong>Điện thoại:</strong> @Model.Phone
+                    </div>
+                    
+                    <div>
+                        <i class="fas fa-info-circle me-2 text-info"></i>
+                        <strong>Giới thiệu:</strong>
+                        <p class="mt-2">@Model.Description</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chọn ngày và phim -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-film me-2"></i>Phim đang chiếu
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Chọn ngày -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Chọn ngày xem phim</h5>
+                        <div class="date-selector d-flex overflow-auto pb-2">
+                            @{
+                                var today = DateTime.Today;
+                                for (int i = 0; i < 10; i++)
+                                {
+                                    var date = today.AddDays(i);
+                                    var isActive = i == 0;
+                                    var dayClass = isActive ? "date-item active" : "date-item";
+                                    
+                                    <div class="@dayClass me-2" data-date="@date.ToString("yyyy-MM-dd")">
+                                        <div class="day-name">@date.ToString("ddd")</div>
+                                        <div class="day-number">@date.Day</div>
+                                        <div class="month">@date.ToString("MMM")</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Danh sách phim và lịch chiếu -->
+                    @if (ViewBag.Movies != null && ((List<dynamic>)ViewBag.Movies).Any())
+                    {
+                        foreach (var movie in ViewBag.Movies)
+                        {
+                            <div class="movie-item mb-4">
+                                <div class="row">
+                                    <div class="col-md-3 mb-3 mb-md-0">
+                                        @if (!string.IsNullOrEmpty(movie.Img))
+                                        {
+                                            <img src="@movie.Img" class="img-fluid rounded" style="width: 100%; height: 180px; object-fit: cover;" alt="@movie.Title">
+                                        }
+                                        else
+                                        {
+                                            <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 100%; height: 180px;">
+                                                <i class="fas fa-film fa-3x text-muted"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-md-9">
+                                        <h5 class="movie-title">
+                                            <a href="/Home/MovieDetails/@movie.Id" class="text-decoration-none">@movie.Title</a>
+                                        </h5>
+                                        <div class="mb-2">
+                                            <span class="badge bg-secondary me-2">@(movie.Category?.Name ?? "Chưa phân loại")</span>
+                                            <span class="badge bg-info text-dark"><i class="fas fa-clock me-1"></i>@movie.Duration phút</span>
+                                        </div>
+                                        <p class="small mb-3">
+                                            @{
+                                                var description = movie.Description ?? "";
+                                                var shortDesc = description.Length > 150 ? description.Substring(0, 150) + "..." : description;
+                                            }
+                                            @shortDesc
+                                        </p>
+                                        
+                                        <div class="showtime-container">
+                                            @if (movie.Showtimes != null && movie.Showtimes.Any())
+                                            {
+                                                <div class="showtime-date" data-date="@today.ToString("yyyy-MM-dd")">
+                                                    <h6><i class="fas fa-calendar-alt me-2"></i>Suất chiếu:</h6>
+                                                    <div class="d-flex flex-wrap">
+                                                        @foreach (var showtime in movie.Showtimes)
+                                                        {
+                                                            <div class="me-2 mb-2">
+                                                                <a href="/Home/SelectSeats/@showtime.Id" class="btn btn-outline-primary showtime-btn">
+                                                                    @showtime.ShowTime.ToString("HH:mm")
+                                                                    <small class="d-block">@showtime.Cinema.Type</small>
+                                                                </a>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>Không có suất chiếu nào trong ngày này
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Không có phim nào đang chiếu tại rạp này
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Bản đồ rạp -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-map-marked-alt me-2"></i>Vị trí rạp
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="map-container">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.0968088622244!2d105.7824!3d21.0288!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab4cd0c66f05%3A0xea31563511af2e54!2s!5e0!3m2!1svi!2s!4v1637304901145!5m2!1svi!2s" 
+                            width="100%" 
+                            height="300" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tiện ích rạp -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-concierge-bell me-2"></i>Tiện ích
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4 mb-3">
+                            <div class="facility-icon mb-2">
+                                <i class="fas fa-parking fa-2x text-primary"></i>
+                            </div>
+                            <div class="facility-name small">Bãi đỗ xe</div>
+                        </div>
+                        <div class="col-4 mb-3">
+                            <div class="facility-icon mb-2">
+                                <i class="fas fa-wifi fa-2x text-success"></i>
+                            </div>
+                            <div class="facility-name small">Wi-Fi miễn phí</div>
+                        </div>
+                        <div class="col-4 mb-3">
+                            <div class="facility-icon mb-2">
+                                <i class="fas fa-utensils fa-2x text-danger"></i>
+                            </div>
+                            <div class="facility-name small">Đồ ăn & Đồ uống</div>
+                        </div>
+                        <div class="col-4 mb-3">
+                            <div class="facility-icon mb-2">
+                                <i class="fas fa-couch fa-2x text-info"></i>
+                            </div>
+                            <div class="facility-name small">Ghế VIP</div>
+                        </div>
+                        <div class="col-4 mb-3">
+                            <div class="facility-icon mb-2">
+                                <i class="fas fa-wheelchair fa-2x text-warning"></i>
+                            </div>
+                            <div class="facility-name small">Lối đi cho người khuyết tật</div>
+                        </div>
+                        <div class="col-4 mb-3">
+                            <div class="facility-icon mb-2">
+                                <i class="fas fa-shopping-cart fa-2x text-primary"></i>
+                            </div>
+                            <div class="facility-name small">Cửa hàng quà tặng</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rạp gần đây -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-theater-masks me-2"></i>Rạp gần đây
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var theater in ViewBag.NearbyTheaters ?? new List<dynamic>())
+                        {
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">@theater.Name</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-map-marker-alt me-1"></i>@theater.Address
+                                        </small>
+                                    </div>
+                                    <a href="/Home/MoviesByTheater/@theater.Id" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-ticket-alt me-1"></i>Xem phim
+                                    </a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Xử lý chọn ngày
+            $('.date-item').click(function() {
+                $('.date-item').removeClass('active');
+                $(this).addClass('active');
+                
+                var selectedDate = $(this).data('date');
+                loadShowtimes(selectedDate);
+            });
+            
+            function loadShowtimes(date) {
+                // Trong thực tế, gọi AJAX để lấy lịch chiếu theo ngày
+                // Ví dụ đơn giản: ẩn/hiện các khối lịch chiếu theo ngày
+                $('.showtime-date').hide();
+                $('.showtime-date[data-date="' + date + '"]').show();
+                
+                // Kiểm tra nếu không có lịch chiếu, hiển thị thông báo
+                if ($('.showtime-date[data-date="' + date + '"]').length === 0) {
+                    $('.movie-item').each(function() {
+                        var $container = $(this).find('.showtime-container');
+                        $container.html('<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Không có suất chiếu nào trong ngày này</div>');
+                    });
+                }
+            }
+        });
+    </script>
+}
+
+<style>
+    .date-selector {
+        scrollbar-width: thin;
+        scrollbar-color: #007bff #e9ecef;
+    }
+    
+    .date-item {
+        min-width: 70px;
+        padding: 8px;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s;
+    }
+    
+    .date-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .date-item.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .day-name {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+    
+    .day-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .month {
+        font-size: 0.8rem;
+    }
+    
+    .showtime-btn {
+        min-width: 70px;
+    }
+    
+    .movie-title {
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .facility-icon {
+        width: 50px;
+        height: 50px;
+        line-height: 50px;
+        margin: 0 auto;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+    }
+</style>

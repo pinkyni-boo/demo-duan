@@ -1,51 +1,47 @@
 @model IEnumerable<demo_duan.Models.Movie>
-
 @{
-    ViewData["Title"] = ViewData["Title"]?.ToString() ?? "Movies";
-    var categories = ViewBag.Categories as List<demo_duan.Models.Category> ?? new List<demo_duan.Models.Category>();
-    var selectedCategory = ViewBag.SelectedCategory as int?;
-    var searchTerm = ViewBag.SearchTerm as string ?? "";
+    ViewData["Title"] = "Phim đang chiếu";
 }
 
-<div class="hero-section bg-dark text-white py-5 mb-5">
+<!-- Hero Section -->
+<div class="movies-hero py-5 mb-5 bg-dark text-white">
     <div class="container">
-        <div class="row align-items-center">
+        <div class="row">
             <div class="col-md-8">
-                <h1 class="hero-title display-4 fw-bold mb-3">@ViewData["Title"]</h1>
-                <p class="lead">Discover amazing movies and book your tickets today!</p>
-            </div>
-            <div class="col-md-4 text-center">
-                <i class="fas fa-film fa-5x opacity-50"></i>
+                <h1>Phim đang chiếu</h1>
+                <p class="lead">Khám phá các bộ phim hấp dẫn đang được chiếu tại rạp</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Search and Filter Section -->
+<!-- Filter Bar -->
 <div class="container mb-4">
-    <div class="row">
-        <div class="col-md-8">
-            <form method="get" class="d-flex">
-                <input type="text" name="searchTerm" value="@searchTerm" 
-                       class="form-control me-2" placeholder="Search movies...">
-                <input type="hidden" name="categoryId" value="@selectedCategory" />
-                <button class="btn btn-primary" type="submit">
-                    <i class="fas fa-search"></i> Search
-                </button>
-            </form>
-        </div>
-        <div class="col-md-4">
-            <form method="get">
-                <input type="hidden" name="searchTerm" value="@searchTerm" />
-                <select name="categoryId" class="form-select" onchange="this.form.submit()">
-                    <option value="">All Categories</option>
-                    @foreach (var category in categories)
-                    {
-                        <option value="@category.Id" selected="@(selectedCategory == category.Id)">
-                            @category.Name
-                        </option>
-                    }
-                </select>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="categoryId" class="form-label">Thể loại</label>
+                    <select id="categoryId" name="categoryId" class="form-select">
+                        <option value="">Tất cả thể loại</option>
+                        @foreach (var category in ViewBag.Categories)
+                        {
+                            <option value="@category.Id" selected="@(ViewBag.SelectedCategory == category.Id ? "selected" : null)">
+                                @category.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="searchTerm" class="form-label">Tìm kiếm</label>
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                           placeholder="Tên phim, diễn viên..." value="@ViewBag.SearchTerm">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -53,196 +49,157 @@
 
 <!-- Movies Grid -->
 <div class="container">
-    @if (Model != null && Model.Any())
-    {
-        <div class="row">
-            @foreach (var movie in Model)
-            {
-                var showtimes = movie.Showtimes ?? new List<demo_duan.Models.Showtime>();
-                var hasShowtimes = showtimes.Any();
-                var isComingSoon = movie.ReleaseDate > DateTime.Today || !hasShowtimes;
-                
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-                    <div class="card h-100 movie-card">
-                        <div class="position-relative">
-                            @if (!string.IsNullOrEmpty(movie.Img))
-                            {
-                                <img src="@movie.Img" class="card-img-top movie-poster" alt="@movie.Title">
-                            }
-                            else
-                            {
-                                <div class="movie-poster-placeholder d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-film fa-3x text-muted"></i>
-                                </div>
-                            }
-                            
-                            <!-- Movie overlay on hover -->
-                            <div class="movie-overlay">
-                                <div class="movie-overlay-content">
-                                    <a asp-action="MovieDetails" asp-route-id="@movie.Id" 
-                                       class="btn btn-light btn-sm">
-                                        <i class="fas fa-info-circle"></i> Details
-                                    </a>
-                                </div>
+    <div class="row" id="moviesContainer">
+        @foreach (var movie in Model)
+        {
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                <div class="card h-100 movie-card">
+                    <div class="position-relative">
+                        @if (!string.IsNullOrEmpty(movie.Img))
+                        {
+                            <img src="@movie.Img" class="card-img-top" alt="@movie.Title" style="height: 300px; object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+                                <i class="fas fa-film fa-3x text-muted"></i>
                             </div>
-
-                            @if (isComingSoon)
-                            {
-                                <span class="badge bg-warning position-absolute top-0 start-0 m-2">
-                                    Coming Soon
-                                </span>
-                            }
-                            else if (hasShowtimes)
-                            {
-                                <span class="badge bg-success position-absolute top-0 start-0 m-2">
-                                    Now Showing
-                                </span>
-                            }
-                        </div>
-                        
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">@(movie.Title ?? "Unknown Title")</h5>
-                            <p class="card-text">
-                                <small class="text-muted">@(movie.Category?.Name ?? "Chưa phân loại")</small>
-                            </p>
-                            <p class="card-text text-muted small">
-                                <i class="fas fa-clock"></i> @movie.Duration minutes
-                                <br>
-                                <i class="fas fa-calendar"></i> @movie.ReleaseDate.ToString("dd/MM/yyyy")
-                            </p>
-                            <p class="card-text flex-grow-1">
-                                @{
-                                    var description = movie.Description ?? "";
-                                    var displayDescription = description.Length > 100 ? description.Substring(0, 100) + "..." : description;
-                                }
-                                @displayDescription
-                            </p>
-                            
-                            <div class="mt-auto">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="h5 text-success mb-0">$@movie.Price</span>
-                                    @if (hasShowtimes)
-                                    {
-                                        <span class="badge bg-info">@showtimes.Count() showtimes</span>
-                                    }
-                                </div>
-                                
-                                <div class="mt-2">
-                                    @if (hasShowtimes)
-                                    {
-                                        @if (User.Identity?.IsAuthenticated == true)
-                                        {
-                                            <a asp-action="BookTicket" asp-route-id="@movie.Id" class="btn btn-primary w-100">
-                                                <i class="fas fa-ticket-alt"></i> Book Tickets
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <a asp-area="Identity" asp-page="/Account/Login" 
-                                               asp-route-returnUrl="@Url.Action("BookTicket", "Home", new { id = movie.Id })"
-                                               class="btn btn-primary w-100">
-                                                <i class="fas fa-sign-in-alt"></i> Login to Book
-                                            </a>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-secondary w-100" disabled>
-                                            <i class="fas fa-clock"></i> Coming Soon
-                                        </button>
-                                    }
-                                </div>
+                        }
+                        <span class="badge bg-success position-absolute top-0 start-0 m-2">
+                            @(movie.Status == MovieStatus.NowShowing ? "Đang chiếu" : 
+                              movie.Status == MovieStatus.ComingSoon ? "Sắp chiếu" : "Ngừng chiếu")
+                        </span>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@movie.Title</h5>
+                        <p class="card-text">
+                            <small class="text-muted">@(movie.Category?.Name ?? "Chưa phân loại")</small>
+                        </p>
+                        <p class="card-text text-muted small">
+                            <i class="fas fa-clock"></i> @movie.Duration phút
+                        </p>
+                        <div class="mt-auto">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="h5 text-success mb-0">@movie.Price.ToString("N0") đ</span>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a asp-action="MovieDetails" asp-route-id="@movie.Id" class="btn btn-outline-primary">
+                                    <i class="fas fa-info-circle"></i> Chi tiết
+                                </a>
+                                <a asp-action="BookTicket" asp-route-id="@movie.Id" class="btn btn-primary">
+                                    <i class="fas fa-ticket-alt"></i> Đặt vé
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
-            }
-        </div>
-    }
-    else
+            </div>
+        }
+    </div>
+
+    @if (!Model.Any())
     {
         <div class="text-center py-5">
-            <i class="fas fa-film fa-5x text-muted mb-3"></i>
-            <h3>No Movies Found</h3>
-            <p class="text-muted">Try adjusting your search or filter criteria.</p>
-            @if (!string.IsNullOrEmpty(searchTerm) || selectedCategory.HasValue)
-            {
-                <a asp-action="Movies" class="btn btn-primary">
-                    <i class="fas fa-refresh"></i> Clear Filters
-                </a>
-            }
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h3>Không tìm thấy phim nào</h3>
+            <p class="text-muted">Vui lòng thử tìm kiếm với từ khóa khác</p>
         </div>
     }
 </div>
 
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Áp dụng bộ lọc
+            $('#applyFilters').click(function() {
+                filterMovies();
+            });
+
+            // Xóa bộ lọc
+            $('#clearFilters').click(function() {
+                $('#categoryFilter').val('');
+                $('#durationFilter').val('');
+                $('#sortOrder').val('newest');
+                filterMovies();
+            });
+
+            function filterMovies() {
+                var category = $('#categoryFilter').val();
+                var duration = $('#durationFilter').val();
+                var sortOrder = $('#sortOrder').val();
+                
+                var visibleCount = 0;
+                
+                // Hiển thị/ẩn phim theo bộ lọc
+                $('.movie-item').each(function() {
+                    var movieCategory = $(this).data('category');
+                    var movieDuration = parseInt($(this).data('duration'));
+                    
+                    var categoryMatch = !category || movieCategory === category;
+                    var durationMatch = true;
+                    
+                    if (duration === '90') {
+                        durationMatch = movieDuration < 90;
+                    } else if (duration === '120') {
+                        durationMatch = movieDuration >= 90 && movieDuration <= 120;
+                    } else if (duration === '150') {
+                        durationMatch = movieDuration > 120 && movieDuration <= 150;
+                    } else if (duration === '151') {
+                        durationMatch = movieDuration > 150;
+                    }
+                    
+                    if (categoryMatch && durationMatch) {
+                        $(this).show();
+                        visibleCount++;
+                    } else {
+                        $(this).hide();
+                    }
+                });
+                
+                // Hiển thị/ẩn trạng thái trống
+                if (visibleCount === 0) {
+                    $('#emptyState').removeClass('d-none');
+                } else {
+                    $('#emptyState').addClass('d-none');
+                }
+                
+                // Sắp xếp phim
+                var movies = $('.movie-item:visible').detach();
+                
+                if (sortOrder === 'name') {
+                    movies.sort(function(a, b) {
+                        return $(a).find('.card-title').text().localeCompare($(b).find('.card-title').text());
+                    });
+                } else if (sortOrder === 'duration') {
+                    movies.sort(function(a, b) {
+                        return $(a).data('duration') - $(b).data('duration');
+                    });
+                }
+                
+                $('#moviesContainer').append(movies);
+            }
+        });
+    </script>
+}
+
 <style>
-/* Hero section */
-.hero-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-/* Movie cards */
-.movie-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.movie-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.movie-poster {
-    height: 300px;
-    object-fit: cover;
-}
-
-.movie-poster-placeholder {
-    height: 300px;
-    background-color: #f8f9fa;
-}
-
-.movie-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.movie-card:hover .movie-overlay {
-    opacity: 1;
-}
-
-.movie-overlay-content {
-    text-align: center;
-}
-
-.movie-overlay-content .btn {
-    margin: 0 5px;
-}
-
-/* Responsive design */
-@ViewBag.Media (max-width: 768px) {
-    .hero-title {
-        font-size: 2.5rem;
+    .movies-hero {
+        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/images/cinema-bg.jpg');
+        background-size: cover;
+        background-position: center;
     }
     
     .movie-card {
-        margin-bottom: 20px;
+        transition: transform 0.3s, box-shadow 0.3s;
     }
-}
-
-@ViewBag.Media (max-width: 576px) {
-    .hero-title {
-        font-size: 2rem;
+    
+    .movie-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
     }
-}
+    
+    .card-img-top {
+        border-top-left-radius: calc(0.25rem - 1px);
+        border-top-right-radius: calc(0.25rem - 1px);
+    }
 </style>

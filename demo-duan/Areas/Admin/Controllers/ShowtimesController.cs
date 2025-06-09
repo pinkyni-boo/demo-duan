@@ -57,25 +57,63 @@ namespace demo_duan.Areas.Admin.Controllers
         // POST: Admin/Showtimes/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MovieId,CinemaId,ShowDate,ShowTime,Price,Status,IsActive")] Showtime showtime)
+        public async Task<IActionResult> Create(Showtime model)
         {
+            // Thêm debug logging
+            System.Diagnostics.Debug.WriteLine($"Received data: MovieId={model.MovieId}, CinemaId={model.CinemaId}");
+            
+            // Fix lỗi bằng cách kiểm tra thủ công
+            if (model.MovieId == 0)
+            {
+                ModelState.AddModelError("MovieId", "Phim không được để trống");
+            }
+            
+            if (model.CinemaId == 0)
+            {
+                ModelState.AddModelError("CinemaId", "Phòng chiếu không được để trống");
+            }
+            
+            // Nếu model valid (hoặc bỏ qua validation khi debug)
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Add(showtime);
+                    // Đảm bảo các trường khác đã được set
+                    model.Status = "Available";
+                    model.IsActive = true;
+                    model.CreatedDate = DateTime.Now;
+                    
+                    // Đảm bảo ShowDate không phải là default
+                    if (model.ShowDate == default)
+                    {
+                        model.ShowDate = DateTime.Today;
+                    }
+                    
+                    _context.Add(model);
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "Lịch chiếu đã được tạo thành công!";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (Exception ex)
                 {
-                    TempData["ErrorMessage"] = "Lỗi khi tạo lịch chiếu: " + ex.Message;
+                    // Log lỗi
+                    System.Diagnostics.Debug.WriteLine($"Error saving showtime: {ex.Message}");
+                    ModelState.AddModelError("", "Có lỗi xảy ra khi lưu. Chi tiết: " + ex.Message);
                 }
             }
-
-            await LoadDropdownData(showtime);
-            return View(showtime);
+            
+            // Log tất cả lỗi validation
+            foreach (var state in ModelState)
+            {
+                foreach (var error in state.Value.Errors)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Validation error for {state.Key}: {error.ErrorMessage}");
+                }
+            }
+            
+            // Tạo lại danh sách cho dropdown
+            ViewBag.MovieId = new SelectList(_context.Movies, "Id", "Title", model.MovieId);
+            ViewBag.TheaterId = new SelectList(_context.Theaters, "Id", "Name");
+            return View(model);
         }
 
         // GET: Admin/Showtimes/Edit/5
@@ -164,8 +202,14 @@ namespace demo_duan.Areas.Admin.Controllers
         public async Task<IActionResult> GetCinemasByTheater(int theaterId)
         {
             var cinemas = await _context.Cinemas
-                .Where(c => c.TheaterId == theaterId && c.IsActive)
-                .Select(c => new { c.Id, c.Name, Seats = c.TotalSeats, c.Type })
+                .Where(c => c.TheaterId == theaterId)
+                .Select(c => new
+                {
+                    id = c.Id,
+                    name = c.Name,
+                    seats = c.TotalSeats,
+                    type = c.Type // Thêm trường type
+                })
                 .ToListAsync();
 
             return Json(cinemas);

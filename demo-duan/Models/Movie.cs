@@ -53,6 +53,15 @@ namespace demo_duan.Models
         [StringLength(255)]
         public string? Cast { get; set; }
 
+        [StringLength(255)]
+        public string? Actor { get; set; } // New property for Actor
+
+        [StringLength(255)]
+        public string? Trailer { get; set; } // New property for Trailer
+
+        [StringLength(255)]
+        public string? TrailerUrl { get; set; } // New property for TrailerUrl
+
         [Required]
         public MovieStatus Status { get; set; } = MovieStatus.ComingSoon;
 

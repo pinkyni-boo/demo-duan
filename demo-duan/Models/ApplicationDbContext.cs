@@ -21,6 +21,7 @@ namespace demo_duan.Models
         public DbSet<PaymentMethod> PaymentMethods { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
+        public DbSet<Booking> Bookings { get; set; } // Thêm dòng này
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

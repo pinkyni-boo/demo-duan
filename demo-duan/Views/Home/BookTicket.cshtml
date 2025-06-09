@@ -1,0 +1,425 @@
+@model demo_duan.Models.Movie
+@{
+    ViewData["Title"] = "Đặt vé xem phim - " + Model.Title;
+    var theaters = ViewBag.Theaters as List<demo_duan.Models.Theater> ?? new List<demo_duan.Models.Theater>();
+    var today = DateTime.Today;
+}
+
+<div class="container mt-5 mb-5">
+    <!-- Booking Progress -->
+    <div class="booking-progress mb-4">
+        <div class="progress-step completed">
+            <div class="step-number">1</div>
+            <div class="step-text">Chọn phim</div>
+        </div>
+        <div class="progress-connector completed"></div>
+        
+        <div class="progress-step active">
+            <div class="step-number">2</div>
+            <div class="step-text">Chọn suất chiếu</div>
+        </div>
+        <div class="progress-connector"></div>
+        
+        <div class="progress-step">
+            <div class="step-number">3</div>
+            <div class="step-text">Chọn ghế</div>
+        </div>
+        <div class="progress-connector"></div>
+        
+        <div class="progress-step">
+            <div class="step-number">4</div>
+            <div class="step-text">Thanh toán</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Movie details column -->
+        <div class="col-md-4 mb-4">
+            <div class="card movie-details-card h-100">
+                <div class="position-relative">
+                    @if (!string.IsNullOrEmpty(Model.Img))
+                    {
+                        <img src="@Model.Img" class="card-img-top" alt="@Model.Title" style="height: 350px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 350px;">
+                            <i class="fas fa-film fa-5x text-muted"></i>
+                        </div>
+                    }
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title">@Model.Title</h4>
+                    <div class="mb-2">
+                        <span class="badge bg-primary">@(Model.Category?.Name ?? "Chưa phân loại")</span>
+                        <span class="badge bg-secondary"><i class="fas fa-clock me-1"></i>@Model.Duration phút</span>
+                    </div>
+                    <p class="card-text small">@Model.Description</p>
+                    <div class="mt-3">
+                        <p class="mb-1"><strong><i class="fas fa-calendar me-2"></i>Ngày khởi chiếu:</strong> @Model.ReleaseDate.ToString("dd/MM/yyyy")</p>
+                        <p class="mb-1"><strong><i class="fas fa-user me-2"></i>Diễn viên:</strong> @Model.Actor</p>
+                        <p class="mb-1"><strong><i class="fas fa-user-tie me-2"></i>Đạo diễn:</strong> @Model.Director</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Showtimes column -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Chọn ngày xem phim</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Date selection -->
+                    <div class="date-pills mb-4">
+                        @for (int i = 0; i < 10; i++)
+                        {
+                            var date = today.AddDays(i);
+                            var isActive = i == 0;
+                            
+                            <div class="date-pill @(isActive ? "active" : "")" data-date="@date.ToString("yyyy-MM-dd")">
+                                <div class="date-day">@date.ToString("ddd")</div>
+                                <div class="date-number">@date.Day</div>
+                                <div class="date-month">@date.ToString("MMM")</div>
+                            </div>
+                        }
+                    </div>
+                    
+                    <!-- Theater selection -->
+                    @foreach (var theater in theaters)
+                    {
+                        <a href="#theater-@theater.Id" class="theater-item" data-bs-toggle="collapse" role="button" aria-expanded="false">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-0">@theater.Name</h5>
+                                    <small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>@theater.Address</small>
+                                </div>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </a>
+                        
+                        <div class="collapse showtime-list" id="theater-@theater.Id">
+                            <div class="p-3 bg-light">
+                                <div class="showtime-loading text-center d-none">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Đang tải suất chiếu...</p>
+                                </div>
+                                
+                                <div class="showtime-content" data-theater-id="@theater.Id">
+                                    <!-- Showtimes will be loaded here -->
+                                    <div class="text-center no-showtimes">
+                                        <p class="mb-0">Chọn ngày để xem lịch chiếu</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    
+                    @if (!theaters.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+                            <h5>Không có rạp nào đang chiếu phim này</h5>
+                            <p class="text-muted">Vui lòng chọn một bộ phim khác hoặc quay lại sau.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const datePills = document.querySelectorAll('.date-pill');
+            const theaterItems = document.querySelectorAll('.theater-item');
+            let selectedDate = document.querySelector('.date-pill.active')?.dataset.date || '@today.ToString("yyyy-MM-dd")';
+            let selectedTheaterId = null;
+            
+            // Date selection
+            datePills.forEach(pill => {
+                pill.addEventListener('click', function() {
+                    datePills.forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedDate = this.dataset.date;
+                    
+                    // If a theater is expanded, load its showtimes
+                    if (selectedTheaterId) {
+                        loadShowtimes(selectedTheaterId, selectedDate);
+                    }
+                    
+                    // Otherwise, reset all theater showtimes
+                    document.querySelectorAll('.showtime-content').forEach(content => {
+                        content.innerHTML = `
+                            <div class="text-center no-showtimes">
+                                <p class="mb-0">Chọn rạp để xem lịch chiếu</p>
+                            </div>
+                        `;
+                    });
+                });
+            });
+            
+            // Theater selection
+            theaterItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const theaterId = this.getAttribute('href').replace('#theater-', '');
+                    selectedTheaterId = theaterId;
+                    
+                    // Toggle chevron icon
+                    const icon = this.querySelector('.fas');
+                    if (icon.classList.contains('fa-chevron-down')) {
+                        icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                    } else {
+                        icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+                    }
+                    
+                    // Load showtimes when expanding
+                    const collapseEl = document.querySelector(this.getAttribute('href'));
+                    if (!collapseEl.classList.contains('show')) {
+                        loadShowtimes(theaterId, selectedDate);
+                    }
+                });
+            });
+            
+            // Function to load showtimes
+            function loadShowtimes(theaterId, date) {
+                const movieId = '@Model.Id';
+                const showtimeContent = document.querySelector(`[data-theater-id="${theaterId}"]`);
+                const loadingEl = showtimeContent.closest('.showtime-list').querySelector('.showtime-loading');
+                
+                // Show loading
+                showtimeContent.classList.add('d-none');
+                loadingEl.classList.remove('d-none');
+                
+                // Make AJAX request to get showtimes
+                fetch(`/api/showtimes?movieId=${movieId}&theaterId=${theaterId}&date=${date}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading
+                        loadingEl.classList.add('d-none');
+                        showtimeContent.classList.remove('d-none');
+                        
+                        if (data && data.length > 0) {
+                            // Group showtimes by cinema
+                            const cinemaShowtimes = {};
+                            data.forEach(showtime => {
+                                if (!cinemaShowtimes[showtime.cinemaId]) {
+                                    cinemaShowtimes[showtime.cinemaId] = {
+                                        cinemaId: showtime.cinemaId,
+                                        cinemaName: showtime.cinemaName,
+                                        cinemaType: showtime.cinemaType,
+                                        showtimes: []
+                                    };
+                                }
+                                cinemaShowtimes[showtime.cinemaId].showtimes.push(showtime);
+                            });
+                            
+                            // Render showtimes
+                            let html = '';
+                            for (const cinemaId in cinemaShowtimes) {
+                                const cinema = cinemaShowtimes[cinemaId];
+                                html += `
+                                    <div class="cinema-group mb-3">
+                                        <h6 class="cinema-name">
+                                            <i class="fas fa-tv me-1"></i>${cinema.cinemaName}
+                                            <span class="badge bg-info ms-2">${cinema.cinemaType}</span>
+                                        </h6>
+                                        <div class="showtime-buttons">
+                                `;
+                                
+                                cinema.showtimes.forEach(showtime => {
+                                    html += `
+                                        <a href="/Home/SelectSeats/${showtime.id}" class="btn btn-outline-primary showtime-btn">
+                                            <div class="time">${showtime.showTime}</div>
+                                            <div class="seats">${showtime.availableSeats} ghế trống</div>
+                                            <div class="price">${showtime.price.toLocaleString('vi-VN')} đ</div>
+                                        </a>
+                                    `;
+                                });
+                                
+                                html += `
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            
+                            showtimeContent.innerHTML = html;
+                        } else {
+                            showtimeContent.innerHTML = `
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>Không có suất chiếu nào trong ngày này
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading showtimes:', error);
+                        loadingEl.classList.add('d-none');
+                        showtimeContent.classList.remove('d-none');
+                        showtimeContent.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle me-2"></i>Lỗi khi tải lịch chiếu. Vui lòng thử lại.
+                            </div>
+                        `;
+                    });
+            }
+        });
+    </script>
+    
+    <style>
+        .movie-details-card {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: none;
+        }
+        
+        .date-pills {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 10px;
+        }
+        
+        .date-pill {
+            min-width: 60px;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 10px 5px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .date-pill:hover {
+            border-color: var(--bs-primary);
+        }
+        
+        .date-pill.active {
+            background: var(--bs-primary);
+            color: white;
+            border-color: var(--bs-primary);
+        }
+        
+        .date-day {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .date-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .date-month {
+            font-size: 0.8rem;
+        }
+        
+        .theater-item {
+            display: block;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            color: inherit;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .theater-item:hover {
+            background: #e9ecef;
+        }
+        
+        .showtime-list {
+            margin-bottom: 15px;
+        }
+        
+        .cinema-name {
+            margin-bottom: 10px;
+        }
+        
+        .showtime-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .showtime-btn {
+            min-width: 100px;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .showtime-btn .time {
+            font-weight: bold;
+        }
+        
+        .showtime-btn .seats,
+        .showtime-btn .price {
+            font-size: 0.8rem;
+        }
+        
+        /* Booking Progress */
+        .booking-progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            flex: 1;
+        }
+        
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .step-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-align: center;
+        }
+        
+        .progress-connector {
+            flex-grow: 1;
+            height: 3px;
+            background-color: #e9ecef;
+            margin: 0 10px;
+            position: relative;
+            top: -15px;
+        }
+        
+        .progress-step.completed .step-number {
+            background-color: var(--bs-success);
+            color: white;
+        }
+        
+        .progress-step.active .step-number {
+            background-color: var(--bs-primary);
+            color: white;
+            transform: scale(1.2);
+        }
+        
+        .progress-connector.completed {
+            background-color: var(--bs-success);
+        }
+    </style>
+}

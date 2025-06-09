@@ -7,10 +7,10 @@ namespace demo_duan.Models
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Phim không được để trống")]
         public int MovieId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Phòng chiếu không được để trống")]
         public int CinemaId { get; set; }
 
         // Thêm TheaterId navigation

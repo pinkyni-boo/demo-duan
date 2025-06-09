@@ -124,7 +124,11 @@
                 </h6>
             </div>
             <div class="card-body">
+                <!-- Kiểm tra hidden fields -->
                 <form asp-action="Create" method="post" id="showtimeForm" novalidate>
+                    <!-- Thêm vào đầu form -->
+                    <input type="hidden" name="__RequestVerificationToken" value="@Html.AntiForgeryToken()" />
+                    
                     <div class="row">
                         <!-- Movie Selection -->
                         <div class="col-md-6 mb-3">
@@ -177,27 +181,38 @@
                         </div>
                     </div>
 
+                    <!-- Thêm trường loại phòng sau trường CinemaId -->
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-tag me-1 text-secondary"></i>Loại phòng
+                            </label>
+                            <input id="CinemaType" class="form-control" type="text" readonly 
+                                   placeholder="Sẽ tự động cập nhật khi chọn phòng chiếu" />
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Loại phòng sẽ tự động cập nhật khi bạn chọn phòng chiếu
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <!-- Date Selection -->
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Date" class="form-label required">
+                            <label asp-for="ShowDate" class="form-label required">
                                 <i class="fas fa-calendar me-1 text-warning"></i>Ngày chiếu
                             </label>
-                            <input asp-for="Date" class="form-control" type="date" required 
+                            <input asp-for="ShowDate" class="form-control" type="date" required 
                                    min="@DateTime.Today.ToString("yyyy-MM-dd")" 
                                    max="@DateTime.Today.AddDays(90).ToString("yyyy-MM-dd")" />
-                            <span asp-validation-for="Date" class="text-danger"></span>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle me-1"></i>Ngày chiếu phải từ hôm nay trở đi
-                            </div>
+                            <span asp-validation-for="ShowDate" class="text-danger"></span>
                         </div>
 
                         <!-- Time Selection -->
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Time" class="form-label required">
+                            <label asp-for="ShowTime" class="form-label required">
                                 <i class="fas fa-clock me-1 text-info"></i>Giờ chiếu
                             </label>
-                            <select asp-for="Time" class="form-select" required>
+                            <select asp-for="ShowTime" class="form-select" required>
                                 <option value="">-- Chọn giờ chiếu --</option>
                                 <option value="08:00:00">08:00 - Suất sáng sớm</option>
                                 <option value="10:30:00">10:30 - Suất sáng</option>
@@ -207,7 +222,7 @@
                                 <option value="20:30:00">20:30 - Suất tối muộn</option>
                                 <option value="22:45:00">22:45 - Suất đêm</option>
                             </select>
-                            <span asp-validation-for="Time" class="text-danger"></span>
+                            <span asp-validation-for="ShowTime" class="text-danger"></span>
                             <div class="form-text">
                                 <i class="fas fa-info-circle me-1"></i>Chọn khung giờ chiếu phù hợp
                             </div>
@@ -305,7 +320,10 @@
                             
                             if (data && data.length > 0) {
                                 $.each(data, function(index, cinema) {
-                                    var optionText = cinema.name + ' (' + cinema.seats + ' ghế)';
+                                    var optionText = cinema.name;
+                                    if (cinema.seats) {
+                                        optionText += ' (' + cinema.seats + ' ghế)';
+                                    }
                                     if (cinema.type) {
                                         optionText += ' - ' + cinema.type;
                                     }
@@ -315,6 +333,7 @@
                                             .val(cinema.id)
                                             .text(optionText)
                                             .data('seats', cinema.seats)
+                                            .data('type', cinema.type) // Lưu loại phòng
                                     );
                                 });
                                 
@@ -340,14 +359,18 @@
                 var selectedOption = $(this).find('option:selected');
                 if (selectedOption.val()) {
                     var seats = selectedOption.data('seats');
+                    var type = selectedOption.data('type') || 'Tiêu chuẩn';
+                    
                     if (seats) {
                         $('#TotalSeats').val(seats);
                         $('#AvailableSeats').val(seats);
-                        showMessage('info', 'Đã cập nhật số ghế: ' + seats);
+                        $('#CinemaType').val(type); // Cập nhật loại phòng
+                        showMessage('info', 'Đã cập nhật thông tin phòng chiếu');
                     }
                 } else {
                     $('#TotalSeats').val('');
                     $('#AvailableSeats').val('');
+                    $('#CinemaType').val('');
                 }
             });
 
@@ -356,23 +379,83 @@
                 let isValid = true;
                 
                 // Check required fields
-                const requiredFields = ['MovieId', 'TheaterId', 'CinemaId', 'Date', 'Time'];
+                const requiredFields = ['MovieId', 'CinemaId', 'ShowDate', 'ShowTime'];
                 
                 requiredFields.forEach(function(fieldId) {
                     const field = $('#' + fieldId);
                     if (!field.val() || field.val() === '') {
                         field.addClass('is-invalid');
                         isValid = false;
+                        // Hiển thị message lỗi bên dưới field
+                        if ($('#' + fieldId + '-error').length === 0) {
+                            field.after('<div id="' + fieldId + '-error" class="text-danger">Trường này không được để trống</div>');
+                        }
                     } else {
                         field.removeClass('is-invalid');
+                        $('#' + fieldId + '-error').remove();
                     }
                 });
+                
+                // Kiểm tra riêng cho TheaterId vì không trực tiếp trong model
+                const theaterField = $('#TheaterId');
+                if (!theaterField.val() || theaterField.val() === '') {
+                    theaterField.addClass('is-invalid');
+                    isValid = false;
+                    if ($('#TheaterId-error').length === 0) {
+                        theaterField.after('<div id="TheaterId-error" class="text-danger">Vui lòng chọn rạp</div>');
+                    }
+                } else {
+                    theaterField.removeClass('is-invalid');
+                    $('#TheaterId-error').remove();
+                }
                 
                 if (!isValid) {
                     e.preventDefault();
                     e.stopPropagation();
                     showMessage('error', 'Vui lòng điền đầy đủ thông tin bắt buộc!');
                     $('html, body').animate({ scrollTop: 0 }, 500);
+                } else {
+                    // Đảm bảo dữ liệu được gửi đúng
+                    console.log('Form valid, submitting with data:', {
+                        MovieId: $('#MovieId').val(),
+                        CinemaId: $('#CinemaId').val(),
+                        ShowDate: $('#ShowDate').val(),
+                        ShowTime: $('#ShowTime').val()
+                    });
+                }
+            });
+
+            // Thêm vào trước khi submit form
+            $('#showtimeForm').on('submit', function(e) {
+                // Code validation đã có
+                
+                // Thêm code debug
+                if (isValid) {
+                    // Show debug info
+                    var formData = {
+                        MovieId: $('#MovieId').val(),
+                        CinemaId: $('#CinemaId').val(),
+                        ShowDate: $('#ShowDate').val(),
+                        ShowTime: $('#ShowTime').val(),
+                        Price: $('#Price').val() // Nếu có trường Price
+                    };
+                    
+                    console.log('Form data to be submitted:', formData);
+                    
+                    // Thêm debug info vào form nếu cần
+                    for (var key in formData) {
+                        // Kiểm tra nếu hidden field đã tồn tại thì cập nhật, nếu không thì thêm mới
+                        if ($('#debug_' + key).length) {
+                            $('#debug_' + key).val(formData[key]);
+                        } else {
+                            $('<input>').attr({
+                                type: 'hidden',
+                                id: 'debug_' + key,
+                                name: 'debug_' + key,
+                                value: formData[key]
+                            }).appendTo('#showtimeForm');
+                        }
+                    }
                 }
             });
 
@@ -417,8 +500,8 @@
             const movieSelect = document.getElementById('MovieId');
             const theaterSelect = document.getElementById('TheaterId');
             const cinemaSelect = document.getElementById('CinemaId');
-            const dateInput = document.getElementById('Date');
-            const timeSelect = document.getElementById('Time');
+            const dateInput = document.getElementById('ShowDate');
+            const timeSelect = document.getElementById('ShowTime');
             const totalSeats = document.getElementById('TotalSeats');
             
             const movieText = movieSelect.options[movieSelect.selectedIndex]?.text || '-';

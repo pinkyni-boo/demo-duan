@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using demo_duan.Models;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace demo_duan.Areas.Admin.Controllers
 {
@@ -131,5 +132,8 @@ namespace demo_duan.Areas.Admin.Controllers
         {
             return _context.Theaters.Any(e => e.Id == id);
         }
+
+        // Thêm vào phương thức Create (GET)
+        // (Removed duplicate Create action to resolve method conflict)
     }
 }

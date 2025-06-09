@@ -1,17 +1,17 @@
 @model demo_duan.Models.Cinema
 @{
-    ViewData["Title"] = "Thêm Phòng chiếu mới";
+    ViewData["Title"] = "Chỉnh sửa phòng chiếu";
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 mb-1"><i class="fas fa-plus-circle me-2 text-primary"></i>Thêm Phòng chiếu mới</h1>
+        <h1 class="h3 mb-1"><i class="fas fa-edit me-2 text-primary"></i>Chỉnh sửa phòng chiếu</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/Admin">Admin</a></li>
-                <li class="breadcrumb-item"><a href="/Admin/Cinemas">Cinemas</a></li>
-                <li class="breadcrumb-item active">Create</li>
+                <li class="breadcrumb-item"><a href="/Admin/Cinemas">Phòng chiếu</a></li>
+                <li class="breadcrumb-item active">Chỉnh sửa</li>
             </ol>
         </nav>
     </div>
@@ -25,7 +25,7 @@
         <div class="card admin-card">
             <div class="card-header">
                 <h6 class="mb-0">
-                    <i class="fas fa-plus-circle me-2"></i>Thông tin phòng chiếu
+                    <i class="fas fa-edit me-2"></i>Thông tin phòng chiếu
                 </h6>
             </div>
             <div class="card-body">
@@ -37,8 +37,10 @@
                     </div>
                 }
                 
-                <form asp-action="Create" method="post">
+                <form asp-action="Edit" method="post">
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="CreatedDate" />
                     
                     <div class="row">
                         <!-- Theater Selection -->
@@ -68,7 +70,7 @@
                             <label asp-for="Rows" class="form-label required">
                                 <i class="fas fa-arrows-alt-v me-1 text-success"></i>Số hàng
                             </label>
-                            <input asp-for="Rows" id="cinemaRows" class="form-control" type="number" min="1" max="50" value="10" />
+                            <input asp-for="Rows" id="cinemaRows" class="form-control" type="number" min="1" max="50" />
                             <span asp-validation-for="Rows" class="text-danger"></span>
                         </div>
 
@@ -77,7 +79,7 @@
                             <label asp-for="SeatsPerRow" class="form-label required">
                                 <i class="fas fa-arrows-alt-h me-1 text-warning"></i>Số ghế / hàng
                             </label>
-                            <input asp-for="SeatsPerRow" id="cinemaSeatsPerRow" class="form-control" type="number" min="1" max="50" value="10" />
+                            <input asp-for="SeatsPerRow" id="cinemaSeatsPerRow" class="form-control" type="number" min="1" max="50" />
                             <span asp-validation-for="SeatsPerRow" class="text-danger"></span>
                         </div>
 
@@ -124,7 +126,7 @@
                     <!-- Status -->
                     <div class="mb-4">
                         <div class="form-check form-switch">
-                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" />
                             <label asp-for="IsActive" class="form-check-label">
                                 <i class="fas fa-toggle-on me-1 text-success"></i>Phòng chiếu hoạt động
                             </label>
@@ -137,8 +139,8 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex gap-2 justify-content-end">
-                        <button type="submit" class="btn btn-admin-success">
-                            <i class="fas fa-save me-1"></i>Lưu phòng chiếu
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Lưu thay đổi
                         </button>
                         <a asp-action="Index" class="btn btn-outline-secondary">
                             <i class="fas fa-times me-1"></i>Hủy
@@ -217,47 +219,16 @@
         border-color: #667eea;
         box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
     }
+    
+    .admin-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px 10px 0 0 !important;
+    }
 </style>
-
-@* Debug code removed: Controller logic (ModelState, _context, etc.) must not be placed in Razor views. 
-   Please move this logic to the corresponding Create action in your CinemasController. *@
-
-@* POST: Admin/Cinemas/Create
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Create(Cinema cinema)
-{
-    try
-    {
-        // Debug: Kiểm tra ModelState
-        if (!ModelState.IsValid)
-        {
-            var errors = string.Join("; ", ModelState.Values
-                .SelectMany(v => v.Errors)
-                .Select(e => e.ErrorMessage));
-            
-            TempData["ErrorMessage"] = $"Dữ liệu không hợp lệ: {errors}";
-            
-            ViewData["TheaterId"] = new SelectList(_context.Theaters, "Id", "Name", cinema.TheaterId);
-            return View(cinema);
-        }
-
-        // Gán giá trị tổng số ghế
-        cinema.TotalSeats = cinema.Rows * cinema.SeatsPerRow;
-        cinema.CreatedDate = DateTime.Now;
-        
-        _context.Cinemas.Add(cinema);
-        await _context.SaveChangesAsync();
-        
-        TempData["SuccessMessage"] = "Thêm mới phòng chiếu thành công!";
-        return RedirectToAction(nameof(Index));
-    }
-    catch (Exception ex)
-    {
-        // Chi tiết lỗi
-        TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
-        
-        ViewData["TheaterId"] = new SelectList(_context.Theaters, "Id", "Name", cinema.TheaterId);
-        return View(cinema);
-    }
-} *@

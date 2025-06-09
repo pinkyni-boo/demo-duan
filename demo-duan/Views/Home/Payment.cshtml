@@ -1,0 +1,436 @@
+@model demo_duan.ViewModels.PaymentViewModel
+@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<div class="container mt-5 mb-5">
+    <!-- Booking Progress -->
+    <div class="booking-progress mb-4">
+        <div class="progress-step completed">
+            <div class="step-number">1</div>
+            <div class="step-text">Chọn phim</div>
+        </div>
+        <div class="progress-connector completed"></div>
+        
+        <div class="progress-step completed">
+            <div class="step-number">2</div>
+            <div class="step-text">Chọn suất chiếu</div>
+        </div>
+        <div class="progress-connector completed"></div>
+        
+        <div class="progress-step completed">
+            <div class="step-number">3</div>
+            <div class="step-text">Chọn ghế</div>
+        </div>
+        <div class="progress-connector completed"></div>
+        
+        <div class="progress-step active">
+            <div class="step-number">4</div>
+            <div class="step-text">Thanh toán</div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Order Summary -->
+        <div class="col-lg-4 order-lg-2 mb-4">
+            <div class="card summary-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Thông tin đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="movie-info mb-4">
+                        <h5>@Model.MovieTitle</h5>
+                        <div class="d-flex justify-content-between my-2">
+                            <span><i class="fas fa-calendar-alt me-2"></i>Ngày:</span>
+                            <span>@Model.ShowDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <div class="d-flex justify-content-between my-2">
+                            <span><i class="fas fa-clock me-2"></i>Giờ:</span>
+                            <span>@Model.ShowTime.ToString(@"hh\:mm")</span>
+                        </div>
+                        <div class="d-flex justify-content-between my-2">
+                            <span><i class="fas fa-film me-2"></i>Rạp:</span>
+                            <span>@Model.TheaterName</span>
+                        </div>
+                        <div class="d-flex justify-content-between my-2">
+                            <span><i class="fas fa-door-open me-2"></i>Phòng:</span>
+                            <span>@Model.CinemaName</span>
+                        </div>
+                    </div>
+                    
+                    <div class="seats-info mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="fas fa-chair me-2"></i>Ghế:</span>
+                            <span>@string.Join(", ", Model.SelectedSeats)</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Số lượng ghế:</span>
+                            <span>@Model.SelectedSeats.Count</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Giá vé:</span>
+                            <span>@Model.TicketPrice.ToString("N0") đ</span>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="price-calculation">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tổng tiền vé:</span>
+                            <span>@((Model.TicketPrice * Model.SelectedSeats.Count).ToString("N0")) đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 transaction-fee">
+                            <span>Phí giao dịch:</span>
+                            <span id="transactionFee">0 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between total-amount">
+                            <h5>Tổng thanh toán:</h5>
+                            <h5 id="totalAmount">@((Model.TicketPrice * Model.SelectedSeats.Count).ToString("N0")) đ</h5>
+                        </div>
+                    </div>
+                    
+                    <div class="countdown-timer mt-3 text-center">
+                        <p class="mb-1">Thời gian còn lại để thanh toán:</p>
+                        <div class="timer" id="countdown">10:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Form -->
+        <div class="col-lg-8 order-lg-1">
+            <div class="card payment-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Thông tin thanh toán</h5>
+                </div>
+                <div class="card-body">
+                    @if(TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    
+                    <form asp-action="ConfirmPayment" method="post" id="paymentForm">
+                        <input type="hidden" asp-for="ShowtimeId" />
+                        <input type="hidden" name="selectedSeats" value="@string.Join(",", Model.SelectedSeats)" />
+                        
+                        <!-- Contact Information -->
+                        <div class="section mb-4">
+                            <h5 class="section-title"><i class="fas fa-user me-2"></i>Thông tin liên hệ</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="CustomerName" class="form-label">Họ và tên</label>
+                                    <input asp-for="CustomerName" class="form-control" required 
+                                           placeholder="Nhập họ và tên" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="CustomerPhone" class="form-label">Số điện thoại</label>
+                                    <input asp-for="CustomerPhone" class="form-control" required
+                                           placeholder="Nhập số điện thoại" />
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label asp-for="CustomerEmail" class="form-label">Email</label>
+                                    <input asp-for="CustomerEmail" type="email" class="form-control" required
+                                           placeholder="Nhập email để nhận vé" />
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>Vé điện tử sẽ được gửi đến email này
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Methods -->
+                        <div class="section mb-4">
+                            <h5 class="section-title"><i class="fas fa-money-bill-wave me-2"></i>Phương thức thanh toán</h5>
+                            <div class="payment-methods">
+                                @foreach (var method in Model.AvailablePaymentMethods)
+                                {
+                                    <div class="form-check payment-method-option mb-2">
+                                        <input class="form-check-input" type="radio" name="SelectedPaymentMethodId" 
+                                               id="payment-@method.Id" value="@method.Id" 
+                                               data-fee="@method.TransactionFee" required
+                                               @(method.Id == Model.SelectedPaymentMethodId ? "checked" : "")>
+                                        <label class="form-check-label payment-method-label" for="payment-@method.Id">
+                                            @if (!string.IsNullOrEmpty(method.Icon))
+                                            {
+                                                <img src="@method.Icon" alt="@method.Name" height="32" />
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-money-bill-alt me-2"></i>
+                                            }
+                                            <span>@method.Name</span>
+                                            @if (method.TransactionFee > 0)
+                                            {
+                                                <span class="badge bg-light text-dark ms-2">
+                                                    Phí: @method.TransactionFee.ToString("N0") đ
+                                                </span>
+                                            }
+                                        </label>
+                                        @if (!string.IsNullOrEmpty(method.Description))
+                                        {
+                                            <div class="payment-method-description">
+                                                <small class="text-muted">@method.Description</small>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                                <label class="form-check-label" for="termsCheck">
+                                    Tôi đồng ý với <a href="/Home/Privacy" target="_blank">điều khoản sử dụng</a> và <a href="/Home/Privacy" target="_blank">chính sách bảo mật</a>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-lock me-2"></i>Thanh toán ngay
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Payment method selection handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentMethods = document.querySelectorAll('input[name="SelectedPaymentMethodId"]');
+            const transactionFeeElement = document.getElementById('transactionFee');
+            const totalAmountElement = document.getElementById('totalAmount');
+            const baseAmount = @(Model.TicketPrice * Model.SelectedSeats.Count);
+            
+            // Update fee and total amount when payment method changes
+            paymentMethods.forEach(method => {
+                method.addEventListener('change', updateTotals);
+                if (method.checked) {
+                    updateTotals();
+                }
+            });
+            
+            function updateTotals() {
+                const selectedMethod = document.querySelector('input[name="SelectedPaymentMethodId"]:checked');
+                if (selectedMethod) {
+                    const fee = parseFloat(selectedMethod.dataset.fee) || 0;
+                    const total = baseAmount + fee;
+                    
+                    transactionFeeElement.textContent = formatCurrency(fee) + ' đ';
+                    totalAmountElement.textContent = formatCurrency(total) + ' đ';
+                }
+            }
+            
+            function formatCurrency(amount) {
+                return amount.toLocaleString('vi-VN');
+            }
+            
+            // Countdown timer
+            const countdownElement = document.getElementById('countdown');
+            let timeLeft = 10 * 60; // 10 minutes in seconds
+            
+            function updateCountdown() {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                countdownElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert('Thời gian giữ ghế đã hết. Vui lòng thực hiện lại từ đầu.');
+                    window.location.href = '/Home/Movies';
+                }
+                
+                timeLeft--;
+            }
+            
+            updateCountdown();
+            const timerInterval = setInterval(updateCountdown, 1000);
+            
+            // Form validation
+            const form = document.getElementById('paymentForm');
+            form.addEventListener('submit', function(e) {
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    
+                    // Highlight first invalid field
+                    const firstInvalid = form.querySelector(':invalid');
+                    if (firstInvalid) {
+                        firstInvalid.focus();
+                    }
+                    
+                    // Show validation message
+                    alert('Vui lòng điền đầy đủ thông tin thanh toán.');
+                }
+            });
+        });
+    </script>
+    
+    <style>
+        /* Booking Progress */
+        .booking-progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            flex: 1;
+        }
+        
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .step-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-align: center;
+        }
+        
+        .progress-connector {
+            flex-grow: 1;
+            height: 3px;
+            background-color: #e9ecef;
+            margin: 0 10px;
+            position: relative;
+            top: -15px;
+        }
+        
+        .progress-step.completed .step-number {
+            background-color: var(--bs-success);
+            color: white;
+        }
+        
+        .progress-step.active .step-number {
+            background-color: var(--bs-primary);
+            color: white;
+            transform: scale(1.2);
+        }
+        
+        .progress-connector.completed {
+            background-color: var(--bs-success);
+        }
+        
+        /* Cards */
+        .summary-card, .payment-card {
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 15px 20px;
+            border-bottom: none;
+        }
+        
+        /* Section styles */
+        .section-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        /* Payment method options */
+        .payment-method-option {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .payment-method-option:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .payment-method-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .payment-method-label img {
+            margin-right: 10px;
+        }
+        
+        .payment-method-description {
+            padding-left: 30px;
+            margin-top: 5px;
+        }
+        
+        /* Total amount */
+        .price-calculation {
+            padding: 15px 0;
+        }
+        
+        .transaction-fee {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .total-amount {
+            font-weight: bold;
+            color: var(--bs-primary);
+            border-top: 1px dashed #dee2e6;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        /* Timer */
+        .countdown-timer {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--bs-danger);
+        }
+        
+        /* Responsive adjustments */
+        @@media (max-width: 991.98px) {
+    .order-lg-1 {
+        order: 1;
+    }
+    .order-lg-2 {
+        order: 2;
+    }
+}
+    </style>
+}
